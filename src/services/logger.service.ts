@@ -1,4 +1,4 @@
-import { Container, Inject } from '@decorators/di';
+import { Container, Inject, Injectable } from '@decorators/di';
 import { EnvironmentService } from './environment.service';
 
 const levels = ['fatal', 'error', 'warn', 'info', 'debug', 'trace'] as const;
@@ -10,6 +10,7 @@ interface ILoggerService<Levels extends string> {
   error: (error: Error) => void;
 }
 
+@Injectable()
 export class LoggerService implements ILoggerService<tempLevels> {
   constructor(
     @Inject('EnvironmentService')
@@ -32,11 +33,14 @@ export class LoggerService implements ILoggerService<tempLevels> {
     );
   }
 
-  error(error: Error) {
-    this.log('error', error.message);
-
-    if (error.stack) {
-      console.log(error.stack);
+  error(error: Error, customMessage?: string) {
+    if (customMessage) {
+      this.log('error', customMessage, {
+        message: error.message,
+        stack: error.stack
+      });
+    } else {
+      this.log('error', error.message);
     }
   }
 }

@@ -1,29 +1,35 @@
-/**
- * Interface representing an iRacing car class data structure
- * Generated from the iRacing API response
- */
-export interface iRacingCarClass {
+import { z } from 'zod';
+
+export const iRacingCarClassSchema = z.object({
   /** The unique identifier for the car class */
-  car_class_id: number;
+  car_class_id: z.number(),
   /** List of cars that belong to this class */
-  cars_in_class: {
-    /** The directory path for the car assets */
-    car_dirpath: string;
-    /** The unique identifier for the car */
-    car_id: number;
-    /** Whether rain is enabled for this car */
-    rain_enabled: boolean;
-    /** Whether the car is retired */
-    retired: boolean;
-  }[];
+  cars_in_class: z.array(
+    z.object({
+      /** The directory path for the car assets */
+      car_dirpath: z.string(),
+      /** The unique identifier for the car */
+      car_id: z.number(),
+      /** Whether rain is enabled for this car */
+      rain_enabled: z.boolean(),
+      /** Whether the car is retired */
+      retired: z.boolean()
+    })
+  ),
   /** Customer ID (0 for official iRacing car classes) */
-  cust_id: number;
+  cust_id: z.number(),
   /** The full name of the car class */
-  name: string;
+  name: z.string(),
   /** Whether rain is enabled for this car class */
-  rain_enabled: boolean;
+  rain_enabled: z.boolean(),
   /** The relative speed rating of the car class */
-  relative_speed: number;
+  relative_speed: z.number(),
   /** The abbreviated name of the car class */
-  short_name: string;
-}
+  short_name: z.string()
+});
+
+/**
+ * Type representing an iRacing car class data structure
+ * Inferred from the Zod schema
+ */
+export type iRacingCarClass = z.infer<typeof iRacingCarClassSchema>;

@@ -1,77 +1,90 @@
+import { z } from 'zod';
+
 /**
- * Interface representing an iRacing car data structure
- * Generated from the iRacing API response
+ * Zod schema for validating iRacing car data
  */
-export interface iRacingCar {
+export const iRacingCarSchema = z.object({
   /** Whether AI racing is enabled for this car */
-  ai_enabled: boolean;
+  ai_enabled: z.boolean(),
   /** Whether custom number colors are allowed for this car */
-  allow_number_colors: boolean;
+  allow_number_colors: z.boolean(),
   /** Whether custom number fonts are allowed for this car */
-  allow_number_font: boolean;
+  allow_number_font: z.boolean(),
   /** Whether primary sponsor customization is allowed */
-  allow_sponsor1: boolean;
+  allow_sponsor1: z.boolean(),
   /** Whether secondary sponsor customization is allowed */
-  allow_sponsor2: boolean;
+  allow_sponsor2: z.boolean(),
   /** Whether wheel color customization is allowed */
-  allow_wheel_color: boolean;
+  allow_wheel_color: z.boolean(),
   /** Whether the car is exempt from awards */
-  award_exempt: boolean;
+  award_exempt: z.boolean(),
   /** The directory path for the car assets */
-  car_dirpath: string;
+  car_dirpath: z.string(),
   /** The unique ID of the car */
-  car_id: number;
+  car_id: z.number().int().positive(),
   /** The full name of the car */
-  car_name: string;
+  car_name: z.string(),
   /** The abbreviated name of the car */
-  car_name_abbreviated: string;
+  car_name_abbreviated: z.string(),
   /** The types of racing categories this car belongs to */
-  car_types: {
-    /** The type of car (e.g., "openwheel", "road") */
-    car_type: string;
-  }[];
+  car_types: z.array(
+    z.object({
+      /** The type of car (e.g., "openwheel", "road") */
+      car_type: z.string()
+    })
+  ),
   /** The weight of the car in pounds */
-  car_weight: number;
+  car_weight: z.number().positive(),
   /** Categories the car belongs to */
-  categories: string[];
+  categories: z.array(z.string()),
   /** The date when the car was created */
-  created: string;
+  created: z.string().datetime(),
   /** The date when the car was first available for purchase */
-  first_sale: string;
+  first_sale: z.string().datetime(),
   /** URL to the car's forum */
-  forum_url: string;
+  forum_url: z.string().url(),
   /** Whether the car is free with subscription */
-  free_with_subscription: boolean;
+  free_with_subscription: z.boolean(),
   /** Whether the car has headlights */
-  has_headlights: boolean;
+  has_headlights: z.boolean(),
   /** Whether the car has multiple dry tire types */
-  has_multiple_dry_tire_types: boolean;
+  has_multiple_dry_tire_types: z.boolean(),
   /** Whether the car has rain-capable tire types */
-  has_rain_capable_tire_types: boolean;
+  has_rain_capable_tire_types: z.boolean(),
   /** The horsepower of the car */
-  hp: number;
+  hp: z.number().positive(),
   /** Whether the car is purchasable on PlayStation */
-  is_ps_purchasable: boolean;
+  is_ps_purchasable: z.boolean(),
   /** Maximum power adjustment percentage */
-  max_power_adjust_pct: number;
+  max_power_adjust_pct: z.number(),
   /** Maximum weight penalty in kilograms */
-  max_weight_penalty_kg: number;
+  max_weight_penalty_kg: z.number().nonnegative(),
   /** Minimum power adjustment percentage */
-  min_power_adjust_pct: number;
+  min_power_adjust_pct: z.number(),
   /** The package ID for the car */
-  package_id: number;
+  package_id: z.number().int().positive(),
   /** Number of livery patterns available */
-  patterns: number;
+  patterns: z.number().int().nonnegative(),
   /** The price of the car */
-  price: number;
+  price: z.number().nonnegative(),
   /** The display string for the price */
-  price_display: string;
+  price_display: z.string(),
   /** Whether rain is enabled for this car */
-  rain_enabled: boolean;
+  rain_enabled: z.boolean(),
   /** Whether the car is retired */
-  retired: boolean;
+  retired: z.boolean(),
   /** Search filters associated with the car */
-  search_filters: string;
+  search_filters: z.string(),
   /** The SKU (Stock Keeping Unit) of the car */
-  sku: number;
-}
+  sku: z.number().int().positive()
+});
+
+/**
+ * Type representing an iRacing car data structure
+ * Inferred from the Zod schema
+ */
+export type iRacingCar = z.infer<typeof iRacingCarSchema>;
+
+export const Car {}
+
+export const CarType {}

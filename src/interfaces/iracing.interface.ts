@@ -6,3 +6,8 @@ export interface iRacingSignedResourceResponse {
   link: string;
   expires: number;
 }
+
+export interface iRacingCommonProperty {
+  id: number;
+  name: string;
+}

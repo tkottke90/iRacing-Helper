@@ -4,9 +4,9 @@ import { iRacingSignedResourceResponse } from '../interfaces/iracing.interface';
 import { EnvironmentService } from './environment.service';
 import { LoggerService } from './logger.service';
 import { UnauthorizedError } from '../utilities/errors.util';
-import { iRacingCar } from '../interfaces/car.iracing';
 import { iRacingTrack } from '../interfaces/track.iracing';
-import { iRacingCarClass } from '../interfaces/car-class.iracing';
+import { Neo4j } from '../integrations/neo4j';
+import { Track } from '../dto/track.dto';
 
 const AUTH_TOKEN_COOKIE_KEY = 'authtoken_members=';
 
@@ -17,10 +17,13 @@ export class iRacingService extends ExternalAPIService {
 
   constructor(
     @Inject('EnvironmentService')
-    private readonly envService: EnvironmentService,
+    envService: EnvironmentService,
 
     @Inject('LoggerService')
-    private readonly logger: LoggerService
+    private readonly logger: LoggerService,
+
+    @Inject('Database')
+    private readonly database: Neo4j
   ) {
     super(envService.get('IRACING_API_URL'));
 
@@ -93,11 +96,11 @@ export class iRacingService extends ExternalAPIService {
   }
 
   async getAllCars() {
-    return this.getResourceLink<iRacingCar[]>('/data/car/get');
+    return await this.getResourceLink<unknown[]>('/data/car/get');
   }
 
   async getAllCarClasses() {
-    return this.getResourceLink<iRacingCarClass[]>('/data/carclass/get');
+    return await this.getResourceLink<unknown[]>('/data/carclass/get');
   }
 
   async getAllTracks() {

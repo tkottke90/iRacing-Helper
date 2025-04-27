@@ -1,177 +1,124 @@
-{
-  "ai_enabled": false,
-  "allow_pitlane_collisions": true,
-  "allow_rolling_start": true,
-  "allow_standing_start": true,
-  "award_exempt": true,
-  "category": "road",
-  "category_id": 2,
-  "closes": "2022-10-31",
-  "config_name": "[Retired] Full Course",
-  "corners_per_lap": 20,
-  "created": "2006-05-28T04:20:00Z",
-  "first_sale": "2008-08-26T00:00:00Z",
-  "free_with_subscription": true,
-  "fully_lit": false,
-  "grid_stalls": 62,
-  "has_opt_path": false,
-  "has_short_parade_lap": false,
-  "has_start_zone": false,
-  "has_svg_map": true,
-  "is_dirt": false,
-  "is_oval": false,
-  "is_ps_purchasable": true,
-  "lap_scoring": 0,
-  "latitude": 36.560008,
-  "location": "Alton, Virginia, USA",
-  "longitude": -79.2048,
-  "max_cars": 72,
-  "night_lighting": false,
-  "number_pitstalls": 37,
-  "opens": "2022-03-01",
-  "package_id": 14,
-  "pit_road_speed_limit": 45,
-  "price": 0,
-  "price_display": "$0.00",
-  "priority": 0,
-  "purchasable": true,
-  "qualify_laps": 2,
-  "rain_enabled": true,
-  "restart_on_left": false,
-  "retired": true,
-  "search_filters": "road",
-  "site_url": "http://www.virclub.com/vir",
-  "sku": 10031,
-  "solo_laps": 4,
-  "start_on_left": false,
-  "supports_grip_compound": false,
-  "tech_track": false,
-  "time_zone": "America/New_York",
-  "track_config_length": 3.27,
-  "track_dirpath": "virginia\\full",
-  "track_id": 2,
-  "track_name": "[Retired] Virginia International Raceway",
-  "track_types": [
-    {
-      "track_type": "road"
-    }
-  ]
-}
+import { z } from 'zod';
 
 /**
- * Interface representing an iRacing track data structure
- * Generated from the iRacing API response
+ * Zod schema for validating iRacing track data
  */
-export interface iRacingTrack {
+export const iRacingTrackConfigSchema = z.object({
   /** Whether AI racing is enabled on this track */
-  ai_enabled: boolean;
+  ai_enabled: z.boolean(),
   /** Whether collisions in the pit lane are allowed */
-  allow_pitlane_collisions: boolean;
+  allow_pitlane_collisions: z.boolean(),
   /** Whether rolling starts are allowed on this track */
-  allow_rolling_start: boolean;
+  allow_rolling_start: z.boolean(),
   /** Whether standing starts are allowed on this track */
-  allow_standing_start: boolean;
+  allow_standing_start: z.boolean(),
   /** Whether the track is exempt from awards */
-  award_exempt: boolean;
+  award_exempt: z.boolean(),
   /** The category of the track (e.g., "road", "oval") */
-  category: string;
+  category: z.string(),
   /** The ID of the track category */
-  category_id: number;
+  category_id: z.number().int(),
   /** The date when the track closes or is removed from service */
-  closes: string;
+  closes: z.string(),
   /** The name of the track configuration */
-  config_name: string;
+  config_name: z.string(),
   /** The number of corners per lap */
-  corners_per_lap: number;
+  corners_per_lap: z.number().int().nonnegative(),
   /** The date when the track was created */
-  created: string;
+  created: z.string().datetime(),
   /** The date when the track was first available for purchase */
-  first_sale: string;
+  first_sale: z.string().datetime(),
   /** Whether the track is free with subscription */
-  free_with_subscription: boolean;
+  free_with_subscription: z.boolean(),
   /** Whether the track is fully lit for night racing */
-  fully_lit: boolean;
+  fully_lit: z.boolean(),
   /** The number of grid stalls available */
-  grid_stalls: number;
+  grid_stalls: z.number().int().nonnegative(),
   /** Whether the track has an optional path */
-  has_opt_path: boolean;
+  has_opt_path: z.boolean(),
   /** Whether the track has a short parade lap */
-  has_short_parade_lap: boolean;
+  has_short_parade_lap: z.boolean(),
   /** Whether the track has a start zone */
-  has_start_zone: boolean;
+  has_start_zone: z.boolean(),
   /** Whether the track has an SVG map */
-  has_svg_map: boolean;
+  has_svg_map: z.boolean(),
   /** Whether the track is a dirt track */
-  is_dirt: boolean;
+  is_dirt: z.boolean(),
   /** Whether the track is an oval */
-  is_oval: boolean;
+  is_oval: z.boolean(),
   /** Whether the track is purchasable on PlayStation */
-  is_ps_purchasable: boolean;
+  is_ps_purchasable: z.boolean(),
   /** The lap scoring method (0 for standard) */
-  lap_scoring: number;
+  lap_scoring: z.number().int().nonnegative(),
   /** The latitude coordinate of the track */
-  latitude: number;
+  latitude: z.number(),
   /** The location of the track */
-  location: string;
+  location: z.string(),
   /** The longitude coordinate of the track */
-  longitude: number;
+  longitude: z.number(),
   /** The maximum number of cars allowed on the track */
-  max_cars: number;
+  max_cars: z.number().int().positive(),
   /** Whether the track has night lighting */
-  night_lighting: boolean;
+  night_lighting: z.boolean(),
   /** The number of pit stalls available */
-  number_pitstalls: number;
+  number_pitstalls: z.number().int().nonnegative(),
   /** The date when the track opens or becomes available */
-  opens: string;
+  opens: z.string(),
   /** The package ID for the track */
-  package_id: number;
+  package_id: z.number().int().positive(),
   /** The pit road speed limit in mph/kph */
-  pit_road_speed_limit: number;
+  pit_road_speed_limit: z.number().positive(),
   /** The price of the track */
-  price: number;
+  price: z.number().nonnegative(),
   /** The display string for the price */
-  price_display: string;
+  price_display: z.string(),
   /** The priority of the track (for sorting) */
-  priority: number;
+  priority: z.number().int(),
   /** Whether the track is available for purchase */
-  purchasable: boolean;
+  purchasable: z.boolean(),
   /** The number of laps required for qualification */
-  qualify_laps: number;
+  qualify_laps: z.number().int().nonnegative(),
   /** Whether rain is enabled on this track */
-  rain_enabled: boolean;
+  rain_enabled: z.boolean(),
   /** Whether restarts are on the left side */
-  restart_on_left: boolean;
+  restart_on_left: z.boolean(),
   /** Whether the track is retired */
-  retired: boolean;
+  retired: z.boolean(),
   /** Search filters associated with the track */
-  search_filters: string;
+  search_filters: z.string(),
   /** The URL of the track's website */
-  site_url: string;
+  site_url: z.string().url(),
   /** The SKU (Stock Keeping Unit) of the track */
-  sku: number;
+  sku: z.number().int().positive(),
   /** The number of laps for solo racing */
-  solo_laps: number;
+  solo_laps: z.number().int().nonnegative(),
   /** Whether starts are on the left side */
-  start_on_left: boolean;
+  start_on_left: z.boolean(),
   /** Whether the track supports grip compound selection */
-  supports_grip_compound: boolean;
+  supports_grip_compound: z.boolean(),
   /** Whether the track is a technical track */
-  tech_track: boolean;
+  tech_track: z.boolean(),
   /** The time zone of the track location */
-  time_zone: string;
+  time_zone: z.string(),
   /** The length of the track configuration in miles/km */
-  track_config_length: number;
+  track_config_length: z.number().positive(),
   /** The directory path for the track assets */
-  track_dirpath: string;
+  track_dirpath: z.string(),
   /** The unique ID of the track */
-  track_id: number;
+  track_id: z.number().int().positive(),
   /** The name of the track */
-  track_name: string;
+  track_name: z.string(),
   /** The types of racing supported on this track */
-  track_types: {
-    /** The type of track (e.g., "road", "oval", "dirt") */
-    track_type: string;
-  }[];
-}
+  track_types: z.array(
+    z.object({
+      /** The type of track (e.g., "road", "oval", "dirt") */
+      track_type: z.string()
+    })
+  )
+});
 
-
+/**
+ * Type representing an iRacing track data structure
+ * Inferred from the Zod schema
+ */
+export type iRacingTrack = z.infer<typeof iRacingTrackConfigSchema>;
