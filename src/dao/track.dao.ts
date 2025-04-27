@@ -1,18 +1,15 @@
 import { Container, Inject, Injectable } from '@decorators/di';
 import {
-  iRacingTrack,
-  iRacingTrackConfigSchema
-} from '../interfaces/track.iracing';
-import {
-  createTrackConfigSchema,
   createTrackSchema,
   Track,
   TrackConfig,
-  trackConfigSchema,
-  trackPropertySchema,
-  trackSchema
+  trackConfigSchema
 } from '../dto/track.dto';
 import { Database } from '../interfaces/database';
+import {
+  iRacingTrack,
+  iRacingTrackConfigSchema
+} from '../interfaces/track.iracing';
 
 @Injectable()
 export class TrackDao {

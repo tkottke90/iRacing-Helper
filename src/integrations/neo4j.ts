@@ -80,7 +80,7 @@ export class Neo4j extends Database<Session, Transaction> {
     const driver = await Neo4j.getInstance();
     if (driver) {
       await driver.close();
-      console.log('Disconnected from Neo4j');
+      this.logger.log('info', 'Disconnected from Neo4j');
 
       // Clear the singleton instance when disconnecting
       Neo4j.instance = null;
@@ -268,7 +268,7 @@ export class Neo4j extends Database<Session, Transaction> {
    * @returns A Promise resolving to the QueryResult
    * @private
    */
-  private async execute(
+  protected async execute(
     query: string,
     params: Record<string, unknown> = {},
     options: QueryOptions<Session, Transaction> = {}
@@ -288,7 +288,7 @@ export class Neo4j extends Database<Session, Transaction> {
    * @returns A Neo4j session
    * @private
    */
-  private async getSession() {
+  protected async getSession() {
     const driver = await Neo4j.getInstance();
 
     if (!driver) {
@@ -323,17 +323,21 @@ export class Neo4j extends Database<Session, Transaction> {
    * Creates a connection to the Neo4j database or returns the existing connection
    * @returns Promise resolving to the Neo4j instance
    */
-  static async connect() {
+  static async connect(logger?: LoggerService) {
     // If an instance already exists, return it
     if (Neo4j.instance) {
       return Neo4j.instance;
     }
 
+    const connectionString =
+      process.env.NEO4J_CONNECTION_STRING ?? 'bolt://localhost:7687';
+
     Neo4j.instance = driver(
-      'bolt://localhost:7687', // Replace with your Neo4j instance URL
+      connectionString, // Replace with your Neo4j instance URL
       auth.basic('neo4j', 'your_password') // Replace with your credentials
     );
-    console.log('Connected to Neo4j');
+
+    logger?.log('debug', 'Connected to Neo4j', { database: connectionString });
 
     return Neo4j.instance;
   }
@@ -343,9 +347,9 @@ export class Neo4j extends Database<Session, Transaction> {
    * @returns Promise resolving to the Neo4j instance
    * @throws Error if called before connect()
    */
-  static async getInstance() {
+  static async getInstance(logger?: LoggerService) {
     if (!Neo4j.instance) {
-      return Neo4j.connect();
+      return Neo4j.connect(logger);
     }
     return Neo4j.instance;
   }

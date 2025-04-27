@@ -84,7 +84,3 @@ export const iRacingCarSchema = z.object({
  * Inferred from the Zod schema
  */
 export type iRacingCar = z.infer<typeof iRacingCarSchema>;
-
-export const Car {}
-
-export const CarType {}

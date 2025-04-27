@@ -116,7 +116,10 @@ export abstract class Database<Session = unknown, Transaction = unknown> {
   ): Promise<T[]>;
 
   /**
-   * Execute a database transaction that can contain multiple operations
+   * Execute a database transaction that can contain multiple operations.
+   * This executes the provided transaction callback, passing it the transaction
+   * object. It handles committing or rolling back the transaction based on the
+   * success or failure of the callback.
    * @template T - The type of data being returned by the transaction
    * @returns An AsyncGenerator that yields results and accepts new queries
    */
