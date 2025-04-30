@@ -3,13 +3,7 @@ import {
   iRacingTrack,
   iRacingTrackConfigSchema
 } from '../interfaces/track.iracing';
-
-function createSchemas<T extends z.ZodRawShape>(schema: z.ZodObject<T>) {
-  return {
-    schema: schema.extend({ id: z.number() }),
-    createSchema: schema
-  };
-}
+import { createSchemas } from '../utilities/schema.utils';
 
 export const { schema: trackSchema, createSchema: createTrackSchema } =
   createSchemas(

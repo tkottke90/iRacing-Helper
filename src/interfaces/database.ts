@@ -29,7 +29,11 @@ export interface QueryInterface<T> {
  * allowing for interchangeable database backends while maintaining the same interface.
  * Implementations should handle the specific database connection and query logic.
  */
-export abstract class Database<Session = unknown, Transaction = unknown> {
+export abstract class Database<
+  Session = unknown,
+  Transaction = unknown,
+  Options = QueryOptions<Session, Transaction>
+> {
   /**
    * Disconnect from the database
    * @returns A promise that resolves when the connection is successfully closed
@@ -70,7 +74,7 @@ export abstract class Database<Session = unknown, Transaction = unknown> {
     source: number,
     target: number,
     direction?: RelationshipDirections,
-    options?: QueryOptions<Session, Transaction>
+    options?: Options
   ): Promise<boolean>;
 
   /**
@@ -82,8 +86,9 @@ export abstract class Database<Session = unknown, Transaction = unknown> {
    */
   abstract select<T extends object = object>(
     table: string,
-    query: QueryInterface<T>
-  ): Promise<T>;
+    query: QueryInterface<T>,
+    options?: Options
+  ): Promise<T[]>;
 
   /**
    * Update an existing record in the specified table
@@ -97,7 +102,8 @@ export abstract class Database<Session = unknown, Transaction = unknown> {
   abstract update<T extends object = object, Key = number>(
     table: string,
     id: Key,
-    data: T
+    data: T,
+    options?: Options
   ): Promise<T>;
 
   /**
@@ -112,8 +118,8 @@ export abstract class Database<Session = unknown, Transaction = unknown> {
     table: string,
     id: number,
     data: T,
-    options?: QueryOptions<Session, Transaction>
-  ): Promise<T[]>;
+    options?: Options
+  ): Promise<T>;
 
   /**
    * Execute a database transaction that can contain multiple operations.
@@ -123,7 +129,22 @@ export abstract class Database<Session = unknown, Transaction = unknown> {
    * @template T - The type of data being returned by the transaction
    * @returns An AsyncGenerator that yields results and accepts new queries
    */
-  abstract transaction<Result>(
-    callback: (transaction: Transaction) => Promise<Result>
-  ): Promise<Result>;
+  abstract transaction<r>(
+    callback: (transaction: Transaction) => Promise<r>
+  ): Promise<r>;
+
+  /**
+   * Execute a raw query against the database
+   * This allows for custom queries that aren't covered by the standard CRUD operations
+   * @template T - The type of data being returned by the query
+   * @param query - The query string to execute
+   * @param params - Parameters to use in the query
+   * @param options - Query options like session or transaction
+   * @returns A promise that resolves to the query result
+   */
+  abstract execute<T = unknown>(
+    query: string,
+    params?: Record<string, unknown>,
+    options?: Options
+  ): Promise<T>;
 }

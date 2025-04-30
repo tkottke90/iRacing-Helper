@@ -1,3 +1,13 @@
+export class BaseError extends Error {
+  static fromCatch(error: unknown) {
+    if (error instanceof BaseError) {
+      return error;
+    } else {
+      return new BaseError((error as Error).message ?? 'UnknownError');
+    }
+  }
+}
+
 export class HTTPError extends Error {
   code: number;
   details: Record<string, any>;

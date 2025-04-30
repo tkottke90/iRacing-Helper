@@ -58,18 +58,48 @@ export class iRacingController {
     }
   }
 
+  @Get('/sync/cars')
+  async syncCars(@Response() res: express.Response) {
+    try {
+      const cars = await this.iRacingService.getAllCars();
+
+      res.json(cars);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error });
+    }
+  }
+
   @Get('/sync/tracks')
   async syncTracks(@Response() res: express.Response) {
     try {
       const tracks = await this.iRacingService.getAllTracks();
 
+      const syncedTracks = [];
+      const errors: Array<{ track: string; config: string; error: Error }> = [];
+
       for (const track of tracks) {
-        await this.trackDao.createFromIRacing(track).catch((error) => {
-          this.logger.error(error);
-        });
+        syncedTracks.push(
+          await this.trackDao.createFromIRacing(track).catch((error) => {
+            this.logger.error(error);
+            errors.push({
+              track: track.track_name ?? 'MISSING',
+              config: track.config_name ?? 'MISSING',
+              error
+            });
+          })
+        );
       }
 
-      res.json(tracks);
+      res.json({
+        results: {
+          total: tracks.length,
+          synced: syncedTracks.length,
+          failed: errors.length
+        },
+        errors,
+        syncedTracks
+      });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error });

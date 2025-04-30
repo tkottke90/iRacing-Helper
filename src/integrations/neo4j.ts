@@ -8,7 +8,8 @@ import {
   driver,
   auth,
   QueryResult,
-  Transaction
+  Transaction,
+  ManagedTransaction
 } from 'neo4j-driver';
 import { Database, QueryInterface, QueryOptions } from '../interfaces/database';
 
@@ -28,7 +29,7 @@ export type RelationshipDirections = 'from' | 'to' | 'both' | 'none';
  * This class provides methods to interact with a Neo4j database
  * and ensures only one connection is created across the application
  */
-export class Neo4j extends Database<Session, Transaction> {
+export class Neo4j extends Database<Session, ManagedTransaction> {
   /**
    * Singleton instance of the Neo4j class
    * @private
@@ -57,10 +58,10 @@ export class Neo4j extends Database<Session, Transaction> {
   async delete<Key = number>(
     nodeLabel: string,
     id: Key,
-    options: QueryOptions<Session, Transaction> = {}
+    options = {}
   ): Promise<boolean> {
     try {
-      const result = await this.execute(
+      const result = await this.execute<QueryResult>(
         `MATCH (n:${nodeLabel}) WHERE id(n) = $id DELETE n`,
         { id },
         options
@@ -98,11 +99,15 @@ export class Neo4j extends Database<Session, Transaction> {
   async insert<T extends object = object>(
     nodeLabel: string,
     data: T,
-    options: QueryOptions<Session, Transaction> = {}
+    options = {}
   ): Promise<T> {
-    return this.execute(
+    return this.execute<QueryResult>(
       `CREATE (n:${nodeLabel} $data) RETURN n`,
-      { data },
+      {
+        data,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
       options
     ).then((result) => result.records[0].get('n').properties as T);
   }
@@ -121,7 +126,7 @@ export class Neo4j extends Database<Session, Transaction> {
     source: number,
     target: number,
     direction: RelationshipDirections,
-    options: QueryOptions<Session, Transaction> = {}
+    options = {}
   ): Promise<boolean> {
     try {
       let directionStr = `-[r:${relationshipLabel}]-`;
@@ -146,7 +151,11 @@ export class Neo4j extends Database<Session, Transaction> {
         'RETURN r'
       ].join(' ');
 
-      const result = await this.execute(queryStr, { source, target }, options);
+      const result = await this.execute<QueryResult>(
+        queryStr,
+        { source, target, relationshipLabel },
+        options
+      );
 
       return result.records.length > 0;
     } catch (error) {
@@ -166,8 +175,8 @@ export class Neo4j extends Database<Session, Transaction> {
   async select<T extends object = object>(
     table: string,
     query: QueryInterface<T>,
-    options: QueryOptions<Session, Transaction> = {}
-  ): Promise<T> {
+    options = {}
+  ) {
     const nodeVar = table.toLocaleLowerCase();
 
     const { query: queryStr, params } = new QueryBuilder(
@@ -175,11 +184,11 @@ export class Neo4j extends Database<Session, Transaction> {
       query
     ).build();
 
-    return this.execute(
+    return this.execute<QueryResult>(
       `MATCH (${nodeVar}:${table}) WHERE ${queryStr} RETURN ${nodeVar}`,
       params,
       options
-    ).then((result) => result.records[0].get('n').properties as T);
+    ).then((result) => this.parseResponse<T>(result));
   }
 
   /**
@@ -188,25 +197,12 @@ export class Neo4j extends Database<Session, Transaction> {
    * @param callback - The function to execute within the transaction
    * @returns A promise that resolves to the result of the transaction
    */
-  async transaction<T>(callback: (transaction: Transaction) => Promise<T>) {
+  async transaction<T>(
+    callback: (transaction: ManagedTransaction) => Promise<T>
+  ) {
     const session: Session = await this.getSession();
-    const tsx = session.beginTransaction();
 
-    try {
-      const result = await callback(tsx);
-
-      await tsx.commit();
-
-      return result;
-    } catch (error) {
-      await tsx.rollback();
-
-      this.logger.error(error as Error, 'Transaction failed');
-
-      throw error;
-    } finally {
-      await session.close();
-    }
+    return await session.executeWrite((tsx) => callback(tsx));
   }
 
   /**
@@ -223,16 +219,16 @@ export class Neo4j extends Database<Session, Transaction> {
     nodeLabel: string,
     id: Key,
     data: T,
-    options: QueryOptions<Session, Transaction> = {}
-  ): Promise<T> {
-    return this.execute(
-      `MATCH (n:${nodeLabel}) WHERE id(n) = $id SET n += $data RETURN n`,
+    options = {}
+  ) {
+    return this.execute<QueryResult>(
+      `MATCH (n:${nodeLabel}) WHERE id(n) = $id SET n += $data, n.updatedAt = datetime() RETURN n`,
       {
         id,
         data
       },
       options
-    ).then((result) => result.records[0].get('n').properties as T);
+    ).then((result) => this.parseResponse<T>(result)[0]);
   }
 
   /**
@@ -244,40 +240,49 @@ export class Neo4j extends Database<Session, Transaction> {
    * @param options - Query options
    * @returns A promise that resolves to an array of the upserted nodes
    */
-  async upsert<T>(
-    nodeLabel: string,
-    id: number,
-    data: T,
-    options: QueryOptions<Session, Transaction> = {}
-  ): Promise<T[]> {
-    return this.execute(
-      `MERGE (n:${nodeLabel} {id: $id}) SET n += $data RETURN n`,
+  async upsert<T>(nodeLabel: string, id: number, data: T, options = {}) {
+    return this.execute<QueryResult>(
+      [
+        'MERGE (n:' + nodeLabel + ' {id: $id})',
+        'ON CREATE SET n += $data, n.createdAt = datetime(), n.updatedAt = datetime()',
+        'ON MATCH SET n += $data, n.updatedAt = datetime()',
+        'RETURN n'
+      ].join(' '),
       {
         id,
         data
       },
       options
-    ).then((result) => this.parseResponse<T>(result));
+    ).then((result) => this.parseResponse<T>(result)[0]);
   }
 
   /**
    * Executes a Cypher query against the Neo4j database
+   * @template T - The type of data being returned by the query
    * @param query - The Cypher query to execute
    * @param params - The parameters to use in the query
    * @param options - Query options
-   * @returns A Promise resolving to the QueryResult
-   * @private
+   * @returns A Promise resolving to the query result
    */
-  protected async execute(
+  async execute<T = QueryResult>(
     query: string,
     params: Record<string, unknown> = {},
-    options: QueryOptions<Session, Transaction> = {}
-  ): Promise<QueryResult> {
-    const session: Session | Transaction =
-      options.transaction ?? options.session ?? (await this.getSession());
+    options: QueryOptions<Session, ManagedTransaction> = {}
+  ): Promise<T> {
+    // If passed a managed transaction, then we can simply use it
+    // we do not need to try/catch because the managed transaction
+    // comes from a wrapper function that handles the transaction
+    if (options.transaction) {
+      return options.transaction.run(query, params) as unknown as T;
+    }
+
+    // Otherwise we need to check if the session is passed in the options
+    // or we need to get a new session
+    const session: Session = options.session ?? (await this.getSession());
 
     try {
-      return await session.run(query, params);
+      const result = await session.run(query, params);
+      return result as unknown as T;
     } finally {
       await session.close();
     }

@@ -22,7 +22,7 @@ export class LoggerService implements ILoggerService<tempLevels> {
       this.envService.get('LOG_LEVEL') ?? 'info'
     ).toLowerCase() as tempLevels;
 
-    if (levels.indexOf(level) < levels.indexOf(logLevel)) {
+    if (levels.indexOf(level) > levels.indexOf(logLevel)) {
       return;
     }
 
