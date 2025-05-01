@@ -6,7 +6,7 @@ import { LoggerService } from './logger.service';
 import { UnauthorizedError } from '../utilities/errors.util';
 import { iRacingTrack } from '../interfaces/track.iracing';
 import { Neo4j } from '../integrations/neo4j';
-import { Track } from '../dto/track.dto';
+import { iRacingCar } from '../interfaces/car.iracing';
 
 const AUTH_TOKEN_COOKIE_KEY = 'authtoken_members=';
 
@@ -96,7 +96,7 @@ export class iRacingService extends ExternalAPIService {
   }
 
   async getAllCars() {
-    return await this.getResourceLink<unknown[]>('/data/car/get');
+    return await this.getResourceLink<iRacingCar[]>('/data/car/get');
   }
 
   async getAllCarClasses() {

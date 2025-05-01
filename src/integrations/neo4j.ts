@@ -62,7 +62,7 @@ export class Neo4j extends Database<Session, ManagedTransaction> {
   ): Promise<boolean> {
     try {
       const result = await this.execute<QueryResult>(
-        `MATCH (n:${nodeLabel}) WHERE id(n) = $id DELETE n`,
+        `MATCH (n:${nodeLabel}) WHERE n.id = $id DETACH DELETE n`,
         { id },
         options
       );

@@ -6,16 +6,15 @@ import {
   createTrackSchema,
   Track,
   TrackConfig,
-  trackConfigSchema,
-  TrackProperty
+  trackConfigSchema
 } from '../dto/track.dto';
-import { Database, QueryOptions } from '../interfaces/database';
+import { Database } from '../interfaces/database';
 import {
   iRacingTrack,
   iRacingTrackConfigSchema
 } from '../interfaces/track.iracing';
-import { prettyPrintSnakeCase } from '../utilities/string.utils';
 import { LoggerService } from '../services';
+import { prettyPrintSnakeCase } from '../utilities/string.utils';
 
 @Injectable()
 export class TrackDao {
@@ -76,7 +75,7 @@ export class TrackDao {
       await this.database.execute(
         [
           'UNWIND $properties AS property',
-          'MERGE (p:TrackProperty {type: property.type})',
+          'MERGE (p:Property {type: property.type})',
           'ON CREATE SET p = property, p.createdAt = datetime(), p.updatedAt = datetime()',
           'ON MATCH SET p += property, p.updatedAt = datetime()',
           'WITH p',

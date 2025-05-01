@@ -3,6 +3,7 @@ import { Controller, Get, Response } from '@decorators/express';
 import { Inject } from '@decorators/di';
 import { iRacingService } from '../services/iracing.service';
 import { TrackDao } from '../dao/track.dao';
+import { CarDao } from '../dao/car.dao';
 import { LoggerService } from '../services';
 
 @Controller('/iracing')
@@ -10,7 +11,8 @@ export class iRacingController {
   constructor(
     @Inject('LoggerService') private readonly logger: LoggerService,
     @Inject('iRacingService') private readonly iRacingService: iRacingService,
-    @Inject('TrackDao') private readonly trackDao: TrackDao
+    @Inject('TrackDao') private readonly trackDao: TrackDao,
+    @Inject('CarDao') private readonly carDao: CarDao
   ) {}
 
   @Get('/')
@@ -63,7 +65,30 @@ export class iRacingController {
     try {
       const cars = await this.iRacingService.getAllCars();
 
-      res.json(cars);
+      const syncedCars = [];
+      const errors: Array<{ car: string; error: Error }> = [];
+
+      for (const car of cars) {
+        syncedCars.push(
+          await this.carDao.createFromIRacing(car).catch((error) => {
+            this.logger.error(error);
+            errors.push({
+              car: car.car_name ?? 'MISSING',
+              error
+            });
+          })
+        );
+      }
+
+      res.json({
+        results: {
+          total: cars.length,
+          synced: syncedCars.length,
+          failed: errors.length
+        },
+        errors,
+        syncedCars
+      });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error });
