@@ -89,6 +89,20 @@ describe('Neo4jQueryBuilder', () => {
   });
 
   describe('peek', () => {
+    beforeAll(() => {
+      // Stub all the console methods
+      jest.spyOn(console, 'log').mockReturnValue();
+      jest.spyOn(console, 'error').mockReturnValue();
+      jest.spyOn(console, 'warn').mockReturnValue();
+      jest.spyOn(console, 'debug').mockReturnValue();
+      jest.spyOn(console, 'info').mockReturnValue();
+      jest.spyOn(console, 'dir').mockReturnValue();
+    });
+
+    afterAll(() => {
+      jest.restoreAllMocks();
+    });
+
     it('should log the query and parameters', () => {
       // Arrange
       const expectedQuery = 'MATCH (test:TestLabel {id: $test_id}) RETURN test';

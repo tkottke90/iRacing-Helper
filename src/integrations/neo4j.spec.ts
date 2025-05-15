@@ -1,6 +1,7 @@
-import { Neo4j, RelationshipDirections } from './neo4j';
+import { Neo4j } from './neo4j';
 import { LoggerService } from '../services/logger.service';
-import { ManagedTransaction, QueryResult, Transaction } from 'neo4j-driver';
+import { QueryResult, Transaction } from 'neo4j-driver';
+import { RelationshipDirections } from '../interfaces/database';
 
 // Mock the neo4j-driver
 jest.mock('neo4j-driver', () => {
@@ -48,6 +49,7 @@ jest.mock('neo4j-driver', () => {
   };
 
   return {
+    ...jest.requireActual('neo4j-driver'),
     driver: jest.fn().mockReturnValue(mockDriver),
     auth: {
       basic: jest
@@ -239,8 +241,8 @@ describe('Neo4j', () => {
 
         // == Assert ==
         expect(expectSpy).toHaveBeenCalledWith(
-          'MATCH (testlabel:TestLabel) WHERE testlabel.id = $id RETURN testlabel',
-          { id: 1 },
+          'MATCH (n:TestLabel {id: $n_id}) RETURN n',
+          { n_id: 1 },
           {}
         );
       });

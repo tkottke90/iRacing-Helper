@@ -175,7 +175,6 @@ export class Neo4j extends Database<Session, ManagedTransaction> {
   ) {
     const { query: queryStr, params } = new Neo4jQueryBuilder()
       .select(table, 'n', query?.where)
-      .peek()
       .build();
 
     return this.execute<QueryResult>(queryStr, params, options).then((result) =>

@@ -69,6 +69,8 @@ export class Neo4jQueryBuilder<
   peek() {
     if (!process.env.NODE_ENV?.startsWith('prod')) {
       console.dir(this.build());
+    } else {
+      console.warn('peek() called in production environment');
     }
 
     return this;
@@ -204,8 +206,3 @@ export class Neo4jQueryBuilder<
     );
   }
 }
-
-const test = new Neo4jQueryBuilder()
-  .select('TestLabel', 'test', { id: 1 })
-  .customReturn('test')
-  .peek();
