@@ -4,16 +4,23 @@ type NodePropKeys = string | number | symbol;
 
 const nodeVarIndex = 'abcdefghijklmnopqrstuvwxyz'.split('');
 
-export class Neo4jQueryBuilder<Nodes extends string = never> {
+export class Neo4jQueryBuilder<
+  Nodes extends string = never,
+  Params extends Record<string, unknown> = Record<string, unknown>
+> {
   private lastNodeVar = '';
   private lastNodeVarIndex = 0;
 
   private nodes: Map<string, { nodeVar: string; label: string }> = new Map();
-  private params: Record<string, any> = {};
+  private params: Params = {} as Params;
 
   private query: string[] = [];
   private return = '';
 
+  /**
+   * Build and return the query string and parameters
+   * @returns An object containing the query string and parameters
+   */
   build() {
     const nodeKeys = Array.from(this.nodes.keys());
 
@@ -26,10 +33,17 @@ export class Neo4jQueryBuilder<Nodes extends string = never> {
     };
   }
 
+  /**
+   * Build a Cypher node reference with optional label and properties
+   * @param nodeVar The variable name for the node
+   * @param label Optional label for the node
+   * @param properties Optional properties for the node
+   * @returns A string representation of the node reference
+   */
   buildNodeReference(
     nodeVar: string,
     label = '',
-    properties: Record<string, string | number | boolean | null> = {}
+    properties: Record<string, unknown> = {}
   ) {
     const { parameterizedString, parameters } = this.generatePropertySelectors(
       nodeVar,
@@ -47,6 +61,11 @@ export class Neo4jQueryBuilder<Nodes extends string = never> {
     ].join('');
   }
 
+  /**
+   * Debug method to log the current query and parameters
+   * Only logs in non-production environments
+   * @returns The QueryBuilder instance for chaining
+   */
   peek() {
     if (!process.env.NODE_ENV?.startsWith('prod')) {
       console.dir(this.build());
@@ -55,6 +74,11 @@ export class Neo4jQueryBuilder<Nodes extends string = never> {
     return this;
   }
 
+  /**
+   * Add a custom RETURN clause to the query
+   * @param nodes The node variables to return
+   * @returns The QueryBuilder instance for chaining
+   */
   customReturn<SelectedNodes extends Nodes>(...nodes: SelectedNodes[]) {
     this.return = `RETURN ${nodes.join(',')}`;
     return this;
@@ -67,22 +91,32 @@ export class Neo4jQueryBuilder<Nodes extends string = never> {
    * @param conditions Optional conditions for the node
    * @returns The QueryBuilder instance for chaining
    */
-  select<Node extends string>(label: string, nodeVar?: Node, filter?: any) {
+  select<Node extends string, Filter extends Record<string, unknown>>(
+    label: string,
+    nodeVar?: Node,
+    filter?: Filter
+  ) {
     const node = this.generateNodeVar(nodeVar);
     this.nodes.set(node, { nodeVar: node, label });
 
     this.query.push(`MATCH ${this.buildNodeReference(node, label, filter)}`);
 
-    return this as unknown as Neo4jQueryBuilder<Nodes | Node>;
+    return this as unknown as Neo4jQueryBuilder<Nodes | Node, Params & Filter>;
   }
 
+  /**
+   * Generate a unique node variable name
+   * @param variable Optional variable name to use as a base
+   * @returns A unique node variable name
+   * @private
+   */
   private generateNodeVar(variable?: string) {
     let nodeVar = variable;
 
     // When the node variable is not provided, we need to generate it
     if (!nodeVar) {
       // The node name will be a concatenation of a prefix and the next letter in the alphabet.
-      // This provides a simple continuious list of generic node names.
+      // This provides a simple continuous list of generic node names.
       //
       // Example:
       //    - a
@@ -118,6 +152,13 @@ export class Neo4jQueryBuilder<Nodes extends string = never> {
     return nodeVar;
   }
 
+  /**
+   * Generate parameterized property selectors for a node
+   * @param nodeVar The variable name for the node
+   * @param record The properties to parameterize
+   * @returns An object containing the parameterized string and parameters
+   * @private
+   */
   private generatePropertySelectors(
     nodeVar: string,
     record: Record<NodePropKeys, unknown>
