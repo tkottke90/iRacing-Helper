@@ -76,8 +76,17 @@ export class TrackDao {
         );
       }
 
+      // Filter down properties to only those that are present and
+      // truthy.  This should only build relationships that actually
+      // exist. Ex a track has ai_enabled: false, we don't want to
+      // create a relationship for that.
+      const properties = CommonProperties.filter(
+        (property) =>
+          property in parsedInput.data && Boolean(parsedInput.data[property])
+      );
+
       await this.iRacingPropertiesDao.bulkUpsertAndAttach(
-        CommonProperties.map((property) => ({
+        properties.map((property) => ({
           name: prettyPrintSnakeCase(property),
           type: property
         })),
