@@ -24,7 +24,7 @@ export class CarController {
       this.logger.log('debug', 'Car MCP endpoint called');
 
       // Get all cars from the database
-      const cars = await this.carDao.getAllCars();
+      const cars = await this.carDao.findCars({});
 
       // Use the toCarDTO method to transform the data if needed
       const carDTOs = await Promise.all(

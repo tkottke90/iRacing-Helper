@@ -13,6 +13,7 @@ import { iRacingCar, iRacingCarSchema } from '../interfaces/car.iracing';
 import { prettyPrintSnakeCase } from '../utilities/string.utils';
 import { QueryResult, Record as Neo4jRecord } from 'neo4j-driver';
 import { iRacingPropertiesDao } from './iracing-properties.dao';
+import { Neo4jQueryBuilder } from '../integrations/query-builder';
 
 @Injectable()
 export class CarDao {
@@ -62,6 +63,12 @@ export class CarDao {
   }
 
   async findCars(query: QueryInterface<CarDTO>): Promise<CarDTO[]> {
+    const findQuery = new Neo4jQueryBuilder()
+      .select('Car', 'c', query.where)
+      .select('Property', 'p')
+      .join('c', 'p')
+      .peek();
+
     return await this.database.select<CarDTO>('Car', query);
   }
 

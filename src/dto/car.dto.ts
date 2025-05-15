@@ -8,8 +8,7 @@ import { createSchemas } from '../utilities/schema.utils';
  */
 export const CommonProperties = [
   'ai_enabled',
-  'rain_enabled',
-  'retired'
+  'rain_enabled'
 ] as const satisfies readonly (keyof iRacingCar)[];
 
 /**
