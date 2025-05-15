@@ -39,7 +39,7 @@ describe('Neo4jQueryBuilder', () => {
   describe('buildNodeReference', () => {
     it('should build a node reference with a label and properties', () => {
       // Arrange
-      const expectedNodeReference = '(test:TestLabel {id: $test_id})';
+      const expectedNodeReference = 'test:TestLabel {id: $test_id}';
       const expectedParams = { test_id: 1 };
 
       const builder = new Neo4jQueryBuilder();
@@ -56,7 +56,7 @@ describe('Neo4jQueryBuilder', () => {
 
     it('should omit the properties when none are provided', () => {
       // Arrange
-      const expectedNodeReference = '(test:TestLabel)';
+      const expectedNodeReference = 'test:TestLabel';
       const expectedParams = {};
 
       const builder = new Neo4jQueryBuilder();
@@ -150,6 +150,28 @@ describe('Neo4jQueryBuilder', () => {
       const builder = new Neo4jQueryBuilder().select('Car');
 
       jest.spyOn(builder as any, 'generateNodeVar').mockReturnValue('a');
+
+      // Act
+      const { query, params } = builder.build();
+
+      // Assert
+      expect(query).toBe(expectedQuery);
+      expect(params).toEqual(expectedParams);
+    });
+  });
+
+  describe('join', () => {
+    it('should create a relationship between two nodes', () => {
+      // Arrange
+      const expectedQuery =
+        'MATCH (car:Car {id: $car_id}) MATCH (track:Property {type: $track_type}) MATCH (car)-[r:RACES_AT]->(track) RETURN car,track';
+      const expectedParams = { car_id: 1, track_type: 'ai_enabled' };
+
+      const builder = new Neo4jQueryBuilder()
+        .select('Car', 'car', { id: 1 })
+        .select('Property', 'prop', { type: 'ai_enabled' })
+        .join('car', 'prop', 'from', { variable: 'r', label: 'RACES_AT' })
+        .customReturn('car', 'prop');
 
       // Act
       const { query, params } = builder.build();

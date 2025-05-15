@@ -27,7 +27,7 @@ export interface QueryInterface<T> {
    * Keys are property names of T, values are the conditions to match
    */
   where?: Record<keyof T, unknown>;
-  relationships?: Record<string, RelationshipDirections>;
+  join?: Record<string, RelationshipDirections>;
 }
 
 /**
