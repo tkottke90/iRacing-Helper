@@ -7,7 +7,14 @@ import { attachControllers } from '@decorators/express';
 import { Application } from 'express';
 import { ServerStatusController } from './server-status';
 import { iRacingController } from './iracing';
+import { MCPController } from './mcp.controller';
+import { CarController } from './car.controller';
 
 export default function (app: Application) {
-  attachControllers(app, [ServerStatusController, iRacingController]);
+  attachControllers(app, [
+    ServerStatusController,
+    iRacingController,
+    MCPController,
+    CarController
+  ]);
 }

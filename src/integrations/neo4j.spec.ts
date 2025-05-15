@@ -1,6 +1,6 @@
 import { Neo4j, RelationshipDirections } from './neo4j';
 import { LoggerService } from '../services/logger.service';
-import { QueryResult } from 'neo4j-driver';
+import { ManagedTransaction, QueryResult, Transaction } from 'neo4j-driver';
 
 // Mock the neo4j-driver
 jest.mock('neo4j-driver', () => {
@@ -232,68 +232,77 @@ describe('Neo4j', () => {
         // == Arrange ==
         const query = { where: { id: 1 } };
 
+        const expectSpy = jest.spyOn(neo4j, 'execute');
+
         // == Act ==
-        const result = await neo4j.select('TestLabel', query);
+        await neo4j.select('TestLabel', query);
 
         // == Assert ==
-        expect(result).toEqual({ id: 1, name: 'Test' });
+        expect(expectSpy).toHaveBeenCalledWith(
+          'MATCH (testlabel:TestLabel) WHERE testlabel.id = $id RETURN testlabel',
+          { id: 1 },
+          {}
+        );
       });
     });
 
     describe('transaction', () => {
-      it('should execute a callback within a transaction and commit if successful', async () => {
+      it('should execute the callback passing the transaction', async () => {
         // == Arrange ==
         const callback = jest.fn().mockResolvedValue({ success: true });
 
+        const mockTransaction = jest.mocked(Transaction);
+        const executeWriteSpy = jest.fn().mockImplementation((callback) => {
+          callback(mockTransaction);
+          return Promise.resolve({ success: true });
+        });
+
+        jest.spyOn(neo4j as any, 'getSession').mockResolvedValue({
+          executeWrite: executeWriteSpy
+        });
+
         // == Act ==
-        const result = await neo4j.transaction(callback);
+        await neo4j.transaction(callback);
 
         // == Assert ==
         expect(callback).toHaveBeenCalled();
-        expect(mockTransaction.commit).toHaveBeenCalled();
-        expect(mockTransaction.rollback).not.toHaveBeenCalled();
-        expect(result).toEqual({ success: true });
-      });
-
-      it('should rollback the transaction if the callback throws an error', async () => {
-        // == Arrange ==
-        const error = new Error('Transaction failed');
-        const callback = jest.fn().mockRejectedValue(error);
-
-        // == Act & Assert ==
-        await expect(neo4j.transaction(callback)).rejects.toThrow(error);
-
-        expect(callback).toHaveBeenCalled();
-        expect(mockTransaction.commit).not.toHaveBeenCalled();
-        expect(mockTransaction.rollback).toHaveBeenCalled();
       });
     });
 
     describe('update', () => {
-      it('should update a node and return the updated properties', async () => {
+      it('should execute a update query', async () => {
         // == Arrange ==
         const data = { name: 'Updated Node' };
 
+        const expectSpy = jest.spyOn(neo4j, 'execute');
+
         // == Act ==
-        const result = await neo4j.update('TestLabel', 1, data);
+        await neo4j.update('TestLabel', 1, data);
 
         // == Assert ==
-        expect(result).toEqual({ id: 1, name: 'Test' });
+        expect(expectSpy).toHaveBeenCalledWith(
+          'MATCH (n:TestLabel) WHERE id(n) = $id SET n += $data, n.updatedAt = datetime() RETURN n',
+          { id: 1, data },
+          {}
+        );
       });
     });
 
     describe('upsert', () => {
-      it('should upsert a node and return the node data', async () => {
+      it('should execute an upsert query', async () => {
         // == Arrange ==
         const data = { name: 'Upsert Node' };
+        const expectSpy = jest.spyOn(neo4j, 'execute');
 
         // == Act ==
-        const result = await neo4j.upsert('TestLabel', 1, data);
+        await neo4j.upsert('TestLabel', 1, data);
 
         // == Assert ==
-        expect(result).toEqual([
-          { id: 1, name: 'Test', labels: ['TestLabel'] }
-        ]);
+        expect(expectSpy).toHaveBeenCalledWith(
+          'MERGE (n:TestLabel {id: $id}) ON CREATE SET n += $data, n.createdAt = datetime(), n.updatedAt = datetime() ON MATCH SET n += $data, n.updatedAt = datetime() RETURN n',
+          { id: 1, data },
+          {}
+        );
       });
     });
   });

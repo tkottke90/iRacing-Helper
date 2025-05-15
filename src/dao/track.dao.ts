@@ -8,22 +8,29 @@ import {
   TrackConfig,
   trackConfigSchema
 } from '../dto/track.dto';
-import { Database } from '../interfaces/database';
+import { Database, QueryOptions } from '../interfaces/database';
 import {
   iRacingTrack,
   iRacingTrackConfigSchema
 } from '../interfaces/track.iracing';
 import { LoggerService } from '../services';
 import { prettyPrintSnakeCase } from '../utilities/string.utils';
+import { QueryResult, Record as Neo4jRecord } from 'neo4j-driver';
+import { iRacingPropertiesDao } from './iracing-properties.dao';
 
 @Injectable()
 export class TrackDao {
+  private readonly nodeLabel = 'Track';
+
   constructor(
     @Inject('Database')
     private readonly database: Database,
 
     @Inject('LoggerService')
-    private readonly logger: LoggerService
+    private readonly logger: LoggerService,
+
+    @Inject('iRacingPropertiesDao')
+    private readonly iRacingPropertiesDao: iRacingPropertiesDao
   ) {}
 
   async createFromIRacing(track: iRacingTrack) {
@@ -69,27 +76,13 @@ export class TrackDao {
         );
       }
 
-      // There are a number of properties that each track has and instead
-      // of making those properties of the nodes themselves, we want to
-      // instead create a relationship between the track and the property
-      await this.database.execute(
-        [
-          'UNWIND $properties AS property',
-          'MERGE (p:Property {type: property.type})',
-          'ON CREATE SET p = property, p.createdAt = datetime(), p.updatedAt = datetime()',
-          'ON MATCH SET p += property, p.updatedAt = datetime()',
-          'WITH p',
-          'MATCH (t:Track {id: $track_id})',
-          'MERGE (t)-[:HAS_PROPERTY]->(p)'
-        ].join(' '),
-        {
-          track_id: trackRecord.id,
-          properties: CommonProperties.map((property) => ({
-            type: property,
-            name: prettyPrintSnakeCase(property)
-          }))
-        },
-        { transaction }
+      await this.iRacingPropertiesDao.bulkUpsertAndAttach(
+        CommonProperties.map((property) => ({
+          name: prettyPrintSnakeCase(property),
+          type: property
+        })),
+        { label: this.nodeLabel, id: trackRecord.id },
+        transaction
       );
 
       this.logger.log('debug', 'Created Track', {
@@ -109,7 +102,11 @@ export class TrackDao {
     );
   }
 
-  async upsertTrackConfig(id: number, data: CreateTrackConfig, options?: any) {
+  async upsertTrackConfig(
+    id: number,
+    data: CreateTrackConfig,
+    options?: QueryOptions<unknown, unknown>
+  ) {
     return await this.database.upsert<TrackConfig>(
       'TrackConfig',
       id,
@@ -117,6 +114,70 @@ export class TrackDao {
       options
     );
   }
+
+  /**
+   * Get all tracks from the database
+   * @returns Promise resolving to an array of tracks
+   */
+  async getAllTracks(): Promise<Track[]> {
+    try {
+      const result = await this.database.execute<QueryResult>(
+        'MATCH (t:Track) RETURN t',
+        {}
+      );
+
+      // Extract track properties from the Neo4j result
+      return result.records.map(
+        (record: Neo4jRecord) => record.get('t').properties as Track
+      );
+    } catch (error) {
+      this.logger.error(
+        error as Error,
+        'Failed to retrieve tracks from database'
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Get a track by ID
+   * @param id The track ID
+   * @returns Promise resolving to a track or null if not found
+   */
+  async getTrackById(id: number): Promise<Track | null> {
+    try {
+      const result = await this.database.execute<QueryResult>(
+        'MATCH (t:Track {id: $id}) RETURN t',
+        { id }
+      );
+
+      if (result.records.length === 0) {
+        return null;
+      }
+
+      return (result.records[0] as Neo4jRecord).get('t').properties as Track;
+    } catch (error) {
+      this.logger.error(
+        error as Error,
+        `Failed to retrieve track with ID ${id} from database`
+      );
+      return null;
+    }
+  }
+
+  // async getTracksByType() {}
+
+  // toTrackDTO(track: Track): TrackDTO {
+  //   return {
+  //     id: track.id,
+  //     name: track.track_name,
+  //     price: track.price,
+  //     price_display: track.price_display,
+  //     free_with_subscription: track.free_with_subscription,
+  //     pit_road_speed_limit: track.pit_road_speed_limit
+
+  //   };
+  // }
 }
 
 Container.provide([{ provide: 'TrackDao', useClass: TrackDao }]);

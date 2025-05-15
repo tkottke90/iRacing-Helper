@@ -1,4 +1,11 @@
-import { RelationshipDirections } from '../integrations/neo4j';
+/**
+ * Defines the possible directions for a relationship between nodes
+ * - 'from': Relationship goes from source to target (source -> target)
+ * - 'to': Relationship goes from target to source (source <- target)
+ * - 'both': Bidirectional relationship (source <-> target)
+ * - 'none': Undirected relationship (source - target)
+ */
+export type RelationshipDirections = 'from' | 'to' | 'both' | 'none';
 
 export interface QueryOptions<Session, Transaction> {
   session?: Session;
@@ -20,6 +27,7 @@ export interface QueryInterface<T> {
    * Keys are property names of T, values are the conditions to match
    */
   where?: Record<keyof T, unknown>;
+  relationships?: Record<string, RelationshipDirections>;
 }
 
 /**
@@ -58,7 +66,8 @@ export abstract class Database<
    */
   abstract insert<T extends object = object>(
     table: string,
-    data: T
+    data: object,
+    options?: Options
   ): Promise<T>;
 
   /**
@@ -102,7 +111,7 @@ export abstract class Database<
   abstract update<T extends object = object, Key = number>(
     table: string,
     id: Key,
-    data: T,
+    data: object,
     options?: Options
   ): Promise<T>;
 
@@ -117,7 +126,7 @@ export abstract class Database<
   abstract upsert<T = unknown>(
     table: string,
     id: number,
-    data: T,
+    data: object,
     options?: Options
   ): Promise<T>;
 
@@ -129,7 +138,7 @@ export abstract class Database<
    * @template T - The type of data being returned by the transaction
    * @returns An AsyncGenerator that yields results and accepts new queries
    */
-  abstract transaction<r>(
+  abstract transaction<r, transaction>(
     callback: (transaction: Transaction) => Promise<r>
   ): Promise<r>;
 

@@ -1,28 +1,24 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Container, Inject } from '@decorators/di';
 import { LoggerService } from '../services/logger.service';
-import { QueryBuilder } from './query-builder';
+import { Neo4jQueryBuilder } from './query-builder';
 import {
   Driver,
   Session,
   driver,
   auth,
   QueryResult,
-  Transaction,
   ManagedTransaction
 } from 'neo4j-driver';
-import { Database, QueryInterface, QueryOptions } from '../interfaces/database';
+import {
+  Database,
+  QueryInterface,
+  QueryOptions,
+  RelationshipDirections
+} from '../interfaces/database';
+import { parseDateProperties } from '../utilities/neo4j.utils';
 
 export type Node<T> = T & { labels: string[]; id: number };
-
-/**
- * Defines the possible directions for a relationship between nodes
- * - 'from': Relationship goes from source to target (source -> target)
- * - 'to': Relationship goes from target to source (source <- target)
- * - 'both': Bidirectional relationship (source <-> target)
- * - 'none': Undirected relationship (source - target)
- */
-export type RelationshipDirections = 'from' | 'to' | 'both' | 'none';
 
 /**
  * Neo4j database implementation with singleton pattern
@@ -98,7 +94,7 @@ export class Neo4j extends Database<Session, ManagedTransaction> {
    */
   async insert<T extends object = object>(
     nodeLabel: string,
-    data: T,
+    data: object,
     options = {}
   ): Promise<T> {
     return this.execute<QueryResult>(
@@ -177,18 +173,14 @@ export class Neo4j extends Database<Session, ManagedTransaction> {
     query: QueryInterface<T>,
     options = {}
   ) {
-    const nodeVar = table.toLocaleLowerCase();
+    const { query: queryStr, params } = new Neo4jQueryBuilder()
+      .select(table, 'n', query?.where)
+      .peek()
+      .build();
 
-    const { query: queryStr, params } = new QueryBuilder(
-      nodeVar,
-      query
-    ).build();
-
-    return this.execute<QueryResult>(
-      `MATCH (${nodeVar}:${table}) WHERE ${queryStr} RETURN ${nodeVar}`,
-      params,
-      options
-    ).then((result) => this.parseResponse<T>(result));
+    return this.execute<QueryResult>(queryStr, params, options).then((result) =>
+      this.parseResponse<T>(result)
+    );
   }
 
   /**
@@ -202,7 +194,7 @@ export class Neo4j extends Database<Session, ManagedTransaction> {
   ) {
     const session: Session = await this.getSession();
 
-    return await session.executeWrite((tsx) => callback(tsx));
+    return await session.executeWrite(callback);
   }
 
   /**
@@ -218,7 +210,7 @@ export class Neo4j extends Database<Session, ManagedTransaction> {
   async update<T = unknown, Key = number>(
     nodeLabel: string,
     id: Key,
-    data: T,
+    data: object,
     options = {}
   ) {
     return this.execute<QueryResult>(
@@ -240,7 +232,12 @@ export class Neo4j extends Database<Session, ManagedTransaction> {
    * @param options - Query options
    * @returns A promise that resolves to an array of the upserted nodes
    */
-  async upsert<T>(nodeLabel: string, id: number, data: T, options = {}) {
+  async upsert<T = unknown>(
+    nodeLabel: string,
+    id: number,
+    data: object,
+    options = {}
+  ) {
     return this.execute<QueryResult>(
       [
         'MERGE (n:' + nodeLabel + ' {id: $id})',
@@ -310,15 +307,18 @@ export class Neo4j extends Database<Session, ManagedTransaction> {
    * @returns An array of Node objects with the properties from the result
    * @protected
    */
-  protected parseResponse<T>(result: QueryResult): Node<T>[] {
+  parseResponse<T>(result: QueryResult): Node<T>[] {
     const data = result.records.flatMap((record) => {
       const recordMetadata = record.toObject();
 
       return Object.values(recordMetadata).map((record) => {
-        return {
-          ...record.properties,
-          labels: record.labels
-        };
+        return parseDateProperties(
+          {
+            ...record.properties,
+            labels: record.labels
+          },
+          ['createdAt', 'updatedAt']
+        );
       });
     });
     return data as Node<T>[];
