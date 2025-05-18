@@ -314,9 +314,10 @@ export class Neo4j extends Database<Session, ManagedTransaction> {
         return parseDateProperties(
           {
             ...record.properties,
-            labels: record.labels
+            labels: record.labels,
+            _id: record.identity
           },
-          ['createdAt', 'updatedAt']
+          ['createdAt', 'updatedAt', 'identity']
         );
       });
     });

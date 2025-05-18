@@ -7,19 +7,20 @@ import {
   CarWithPropertiesDTO,
   CarPropertyDTO
 } from '../dto/car.dto';
-import { Database, QueryInterface, QueryOptions } from '../interfaces/database';
+import { QueryInterface, QueryOptions } from '../interfaces/database';
 import { LoggerService } from '../services';
 import { iRacingCar, iRacingCarSchema } from '../interfaces/car.iracing';
 import { prettyPrintSnakeCase } from '../utilities/string.utils';
 import { QueryResult, Record as Neo4jRecord } from 'neo4j-driver';
 import { iRacingPropertiesDao } from './iracing-properties.dao';
 import { Neo4jQueryBuilder } from '../integrations/query-builder';
+import { Neo4j } from '../integrations/neo4j';
 
 @Injectable()
 export class CarDao {
   constructor(
     @Inject('Database')
-    private readonly database: Database,
+    private readonly database: Neo4j,
 
     @Inject('LoggerService')
     private readonly logger: LoggerService,
@@ -75,12 +76,15 @@ export class CarDao {
     const { query: queryStr, params } = new Neo4jQueryBuilder()
       .select('Car', 'c', query.where)
       .select('Property', 'p')
-      .join('c', 'p')
+      .join('c', 'p', 'both', { variable: 'r' })
       .peek()
       .build();
 
-    return this.database.execute(queryStr, params);
-    // return await this.database.select<CarDTO>('Car', query);
+    const result = await this.database.execute<QueryResult>(queryStr, params);
+
+    const data = this.database.parseResponse(result);
+
+    return this.database.parseResponse(result);
   }
 
   async upsertCar(

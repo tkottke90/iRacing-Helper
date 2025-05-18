@@ -65,7 +65,7 @@ export class CarController {
 
       res.status(200).json(mcpResource);
     } catch (error) {
-      this.logger.error(error as Error, 'Failed to retrieve cars for MCP');
+      this.logger.error(error as Error, 'Failed to retrieve cars');
       res.status(500).json({ error: 'Failed to retrieve cars' });
     }
   }

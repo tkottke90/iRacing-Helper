@@ -1,4 +1,4 @@
-import { QueryInterface, RelationshipDirections } from '../interfaces/database';
+import { RelationshipDirections } from '../interfaces/database';
 
 type NodePropKeys = string | number | symbol;
 export type Node<
@@ -86,9 +86,11 @@ export class Neo4jQueryBuilder<
     // Determine if a relationship pattern is needed based on the label and variable
     let relationshipPattern = '';
 
+    const relationshipVar = this.generateNodeVar(attributes.variable);
+
     if (attributes.label || attributes.variable) {
       const relationshipRef = this.buildNodeReference(
-        this.generateNodeVar(attributes.variable),
+        relationshipVar,
         attributes.label,
         attributes.properties
       );
@@ -109,6 +111,15 @@ export class Neo4jQueryBuilder<
       case 'none':
         arrowDirection = `-${relationshipPattern}-`;
         break;
+    }
+
+    // Since the relationship pattern can be empty, we should only,
+    // store the relationship variable if we are using one
+    if (relationshipPattern) {
+      this.nodes.set(relationshipVar, {
+        nodeVar: relationshipVar,
+        label: attributes.label ?? ''
+      });
     }
 
     return `${sourceRef}${arrowDirection}${targetRef}`;
