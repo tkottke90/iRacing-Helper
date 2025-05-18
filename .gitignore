@@ -5,3 +5,4 @@ dist/
 .env
 
 Agent_Notebook
+.DS_Store
