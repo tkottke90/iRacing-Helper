@@ -72,13 +72,15 @@ export class CarDao {
   }
 
   async findCars(query: QueryInterface<CarDTO>): Promise<CarDTO[]> {
-    const findQuery = new Neo4jQueryBuilder()
+    const { query: queryStr, params } = new Neo4jQueryBuilder()
       .select('Car', 'c', query.where)
       .select('Property', 'p')
       .join('c', 'p')
-      .peek();
+      .peek()
+      .build();
 
-    return await this.database.select<CarDTO>('Car', query);
+    return this.database.execute(queryStr, params);
+    // return await this.database.select<CarDTO>('Car', query);
   }
 
   async upsertCar(

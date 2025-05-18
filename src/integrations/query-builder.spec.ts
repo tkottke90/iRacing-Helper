@@ -1,4 +1,24 @@
-import { Neo4jQueryBuilder } from './query-builder';
+import { RelationshipDirections } from '../interfaces/database';
+import { Neo4jQueryBuilder, Node } from './query-builder';
+
+type BuildRelationShipRefCases = Array<
+  [
+    string,
+    Partial<Node<string, string>>,
+    Partial<Node<string, string>>,
+    RelationshipDirections | undefined,
+    (
+      | Partial<{
+          label: string;
+          variable: string;
+          properties: Record<string, unknown>;
+        }>
+      | undefined
+    ),
+    string,
+    Record<string, unknown>
+  ]
+>;
 
 describe('Neo4jQueryBuilder', () => {
   // Class construction tests
@@ -67,6 +87,318 @@ describe('Neo4jQueryBuilder', () => {
       // Assert
       expect(nodeReference).toBe(expectedNodeReference);
       expect(builder.build().params).toEqual(expectedParams);
+    });
+  });
+
+  describe('buildRelationshipReference', () => {
+    describe('Basic Tests', () => {
+      const cases: BuildRelationShipRefCases = [
+        [
+          'should build a relationship from existing nodes',
+          { variable: 'car' },
+          { variable: 'prop' },
+          'from',
+          { label: 'RACES_AT', variable: 'r' },
+          '(car)-[r:RACES_AT]->(prop)',
+          {}
+        ],
+        [
+          'should build a relationship with direction "to"',
+          { variable: 'car' },
+          { variable: 'prop' },
+          'to',
+          { label: 'RACES_AT', variable: 'r' },
+          '(car)<-[r:RACES_AT]-(prop)',
+          {}
+        ],
+        [
+          'should build a relationship with direction "both"',
+          { variable: 'car' },
+          { variable: 'prop' },
+          'both',
+          { label: 'RACES_AT', variable: 'r' },
+          '(car)-[r:RACES_AT]-(prop)',
+          {}
+        ],
+        [
+          'should build a relationship with direction "none"',
+          { variable: 'car' },
+          { variable: 'prop' },
+          'none',
+          { label: 'RACES_AT', variable: 'r' },
+          '(car)-[r:RACES_AT]-(prop)',
+          {}
+        ],
+        [
+          'should use default direction "none" when not specified',
+          { variable: 'car' },
+          { variable: 'prop' },
+          undefined,
+          { label: 'RACES_AT', variable: 'r' },
+          '(car)-[r:RACES_AT]-(prop)',
+          {}
+        ],
+        [
+          'should use exclude the relationship pattern when no label or variable is provided',
+          { variable: 'car' },
+          { variable: 'prop' },
+          undefined,
+          undefined,
+          '(car)--(prop)',
+          {}
+        ]
+      ];
+
+      it.each(cases)(
+        '%s',
+        (
+          _description,
+          sourceNode,
+          targetNode,
+          direction,
+          attributes,
+          expectedQuery,
+          expectedParams
+        ) => {
+          // Arrange
+          const builder = new Neo4jQueryBuilder();
+
+          // Act
+          const relationshipReference = builder.buildRelationshipReference(
+            sourceNode as any, // Using any here because the case list defines the type
+            targetNode as any, // Using any here because the case list defines the type
+            direction,
+            attributes
+          );
+
+          // Assert
+          expect(relationshipReference).toBe(expectedQuery);
+          expect(builder.build().params).toEqual(expectedParams);
+        }
+      );
+    });
+
+    describe('Node Construction', () => {
+      const cases: BuildRelationShipRefCases = [
+        [
+          'should build a relationship with source and target having labels',
+          { variable: 'car', label: 'Car' },
+          { variable: 'prop', label: 'Property' },
+          'from',
+          { label: 'RACES_AT', variable: 'r' },
+          '(car:Car)-[r:RACES_AT]->(prop:Property)',
+          {}
+        ],
+        [
+          'should build a relationship with source and target having properties',
+          { variable: 'car', properties: { id: 1 } },
+          { variable: 'prop', properties: { type: 'ai_enabled' } },
+          'from',
+          { label: 'RACES_AT', variable: 'r' },
+          '(car {id: $car_id})-[r:RACES_AT]->(prop {type: $prop_type})',
+          { car_id: 1, prop_type: 'ai_enabled' }
+        ],
+        [
+          'should build a relationship with source and target having both labels and properties',
+          { variable: 'car', label: 'Car', properties: { id: 1 } },
+          {
+            variable: 'prop',
+            label: 'Property',
+            properties: { type: 'ai_enabled' }
+          },
+          'from',
+          { label: 'RACES_AT', variable: 'r' },
+          '(car:Car {id: $car_id})-[r:RACES_AT]->(prop:Property {type: $prop_type})',
+          { car_id: 1, prop_type: 'ai_enabled' }
+        ],
+        [
+          'should build a relationship with source having properties and target having none',
+          { variable: 'car', properties: { id: 1 } },
+          { variable: 'prop' },
+          'from',
+          { label: 'RACES_AT', variable: 'r' },
+          '(car {id: $car_id})-[r:RACES_AT]->(prop)',
+          { car_id: 1 }
+        ],
+        [
+          'should build a relationship with target having properties and source having none',
+          { variable: 'car' },
+          { variable: 'prop', properties: { type: 'ai_enabled' } },
+          'from',
+          { label: 'RACES_AT', variable: 'r' },
+          '(car)-[r:RACES_AT]->(prop {type: $prop_type})',
+          { prop_type: 'ai_enabled' }
+        ]
+      ];
+
+      it.each(cases)(
+        '%s',
+        (
+          _description,
+          sourceNode,
+          targetNode,
+          direction,
+          attributes,
+          expectedQuery,
+          expectedParams
+        ) => {
+          // Arrange
+          const builder = new Neo4jQueryBuilder();
+
+          // Act
+          const relationshipReference = builder.buildRelationshipReference(
+            sourceNode as any, // Using any here because the case list defines the type
+            targetNode as any, // Using any here because the case list defines the type
+            direction,
+            attributes
+          );
+
+          // Assert
+          expect(relationshipReference).toBe(expectedQuery);
+          expect(builder.build().params).toEqual(expectedParams);
+        }
+      );
+    });
+
+    describe('Relationship Attribute Tests', () => {
+      const cases: BuildRelationShipRefCases = [
+        [
+          'should build a relationship with a relationship variable only',
+          { variable: 'car' },
+          { variable: 'prop' },
+          'from',
+          { variable: 'rel' },
+          '(car)-[rel]->(prop)',
+          {}
+        ],
+        [
+          'should build a relationship with a relationship label only',
+          { variable: 'car' },
+          { variable: 'prop' },
+          'from',
+          { label: 'RACES_AT' },
+          '(car)-[a:RACES_AT]->(prop)',
+          {}
+        ],
+        [
+          'should build a relationship with both relationship variable and label',
+          { variable: 'car' },
+          { variable: 'prop' },
+          'from',
+          { variable: 'rel', label: 'RACES_AT' },
+          '(car)-[rel:RACES_AT]->(prop)',
+          {}
+        ],
+        [
+          'should build a relationship with relationship properties',
+          { variable: 'car' },
+          { variable: 'prop' },
+          'from',
+          { variable: 'rel', properties: { since: 2023 } },
+          '(car)-[rel {since: $rel_since}]->(prop)',
+          { rel_since: 2023 }
+        ],
+        [
+          'should build a relationship with relationship variable, label, and properties',
+          { variable: 'car' },
+          { variable: 'prop' },
+          'from',
+          { variable: 'rel', label: 'RACES_AT', properties: { since: 2023 } },
+          '(car)-[rel:RACES_AT {since: $rel_since}]->(prop)',
+          { rel_since: 2023 }
+        ]
+      ];
+
+      it.each(cases)(
+        '%s',
+        (
+          _description,
+          sourceNode,
+          targetNode,
+          direction,
+          attributes,
+          expectedQuery,
+          expectedParams
+        ) => {
+          // Arrange
+          const builder = new Neo4jQueryBuilder();
+
+          // Act
+          const relationshipReference = builder.buildRelationshipReference(
+            sourceNode as any, // Using any here because the case list defines the type
+            targetNode as any, // Using any here because the case list defines the type
+            direction,
+            attributes
+          );
+
+          // Assert
+          expect(relationshipReference).toBe(expectedQuery);
+          expect(builder.build().params).toEqual(expectedParams);
+        }
+      );
+    });
+
+    describe('Edge Cases', () => {
+      const cases: BuildRelationShipRefCases = [
+        [
+          'should handle empty source and target objects',
+          {},
+          {},
+          'from',
+          { label: 'RACES_AT', variable: 'r' },
+          '(a)-[r:RACES_AT]->(b)',
+          {}
+        ],
+        [
+          'should handle properties with special characters',
+          { variable: 'car' },
+          { variable: 'prop' },
+          'from',
+          { variable: 'rel', properties: { 'special-key': 'special value' } },
+          '(car)-[rel {special-key: $rel_special_key}]->(prop)',
+          { rel_special_key: 'special value' }
+        ],
+        [
+          'should handle very long variable names',
+          { variable: 'veryLongVariableNameForSource' },
+          { variable: 'veryLongVariableNameForTarget' },
+          'from',
+          {
+            variable: 'veryLongVariableNameForRelationship',
+            label: 'VERY_LONG_RELATIONSHIP_LABEL'
+          },
+          '(veryLongVariableNameForSource)-[veryLongVariableNameForRelationship:VERY_LONG_RELATIONSHIP_LABEL]->(veryLongVariableNameForTarget)',
+          {}
+        ]
+      ];
+
+      it.each(cases)(
+        '%s',
+        (
+          _description,
+          sourceNode,
+          targetNode,
+          direction,
+          attributes,
+          expectedQuery,
+          expectedParams
+        ) => {
+          // Arrange
+          const builder = new Neo4jQueryBuilder();
+
+          // Act
+          const relationshipReference = builder.buildRelationshipReference(
+            sourceNode as any, // Using any here because the case list defines the type
+            targetNode as any, // Using any here because the case list defines the type
+            direction,
+            attributes
+          );
+
+          // Assert
+          expect(relationshipReference).toBe(expectedQuery);
+          expect(builder.build().params).toEqual(expectedParams);
+        }
+      );
     });
   });
 
@@ -149,7 +481,12 @@ describe('Neo4jQueryBuilder', () => {
 
       const builder = new Neo4jQueryBuilder().select('Car');
 
-      jest.spyOn(builder as any, 'generateNodeVar').mockReturnValue('a');
+      jest
+        .spyOn(
+          builder as unknown as { generateNodeVar: (v?: string) => string },
+          'generateNodeVar'
+        )
+        .mockReturnValue('a');
 
       // Act
       const { query, params } = builder.build();
@@ -164,8 +501,9 @@ describe('Neo4jQueryBuilder', () => {
     it('should create a relationship between two nodes', () => {
       // Arrange
       const expectedQuery =
-        'MATCH (car:Car {id: $car_id}) MATCH (track:Property {type: $track_type}) MATCH (car)-[r:RACES_AT]->(track) RETURN car,track';
-      const expectedParams = { car_id: 1, track_type: 'ai_enabled' };
+        'MATCH (car:Car {id: $car_id}) MATCH (prop:Property {type: $prop_type}) MATCH (car)-[r:RACES_AT]->(prop) RETURN car,prop';
+
+      const expectedParams = { car_id: 1, prop_type: 'ai_enabled' };
 
       const builder = new Neo4jQueryBuilder()
         .select('Car', 'car', { id: 1 })
