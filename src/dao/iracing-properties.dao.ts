@@ -1,11 +1,11 @@
 import { Container, Inject, Injectable } from '@decorators/di';
-import { Database } from '../interfaces/database';
-import { LoggerService } from '../services';
 import {
   ManagedTransaction,
-  QueryResult,
-  Record as Neo4jRecord
+  Record as Neo4jRecord,
+  QueryResult
 } from 'neo4j-driver';
+import { Neo4j } from 'neo4j-helper';
+import { LoggerService } from '../services';
 import { prettyPrintSnakeCase } from '../utilities/string.utils';
 
 interface iRacingProperty {
@@ -24,7 +24,7 @@ export class iRacingPropertiesDao {
 
   constructor(
     @Inject('Database')
-    private readonly database: Database,
+    private readonly database: Neo4j,
 
     @Inject('LoggerService')
     private readonly logger: LoggerService
@@ -37,7 +37,7 @@ export class iRacingPropertiesDao {
   async bulkUpsertAndAttach(
     properties: iRacingProperty[],
     relatedEntity: { label: string; id: number },
-    transaction?: unknown
+    transaction?: ManagedTransaction
   ) {
     // There are a number of properties that each car has and instead
     // of making those properties of the nodes themselves, we want to

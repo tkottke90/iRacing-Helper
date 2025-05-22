@@ -13,8 +13,7 @@ import { iRacingCar, iRacingCarSchema } from '../interfaces/car.iracing';
 import { prettyPrintSnakeCase } from '../utilities/string.utils';
 import { QueryResult, Record as Neo4jRecord } from 'neo4j-driver';
 import { iRacingPropertiesDao } from './iracing-properties.dao';
-import { Neo4jQueryBuilder } from '../integrations/query-builder';
-import { Neo4j } from '../integrations/neo4j';
+import { Neo4j, Neo4jQueryBuilder } from 'neo4j-helper';
 
 @Injectable()
 export class CarDao {

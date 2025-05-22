@@ -5,7 +5,7 @@ import { EnvironmentService } from './environment.service';
 import { LoggerService } from './logger.service';
 import { UnauthorizedError } from '../utilities/errors.util';
 import { iRacingTrack } from '../interfaces/track.iracing';
-import { Neo4j } from '../integrations/neo4j';
+import { Neo4j } from 'neo4j-helper';
 import { iRacingCar } from '../interfaces/car.iracing';
 
 const AUTH_TOKEN_COOKIE_KEY = 'authtoken_members=';
@@ -20,10 +20,7 @@ export class iRacingService extends ExternalAPIService {
     envService: EnvironmentService,
 
     @Inject('LoggerService')
-    private readonly logger: LoggerService,
-
-    @Inject('Database')
-    private readonly database: Neo4j
+    private readonly logger: LoggerService
   ) {
     super(envService.get('IRACING_API_URL'));
 

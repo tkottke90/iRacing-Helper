@@ -8,15 +8,20 @@ import {
   TrackConfig,
   trackConfigSchema
 } from '../dto/track.dto';
-import { Database, QueryOptions } from '../interfaces/database';
+import { QueryOptions } from '../interfaces/database';
 import {
   iRacingTrack,
   iRacingTrackConfigSchema
 } from '../interfaces/track.iracing';
 import { LoggerService } from '../services';
 import { prettyPrintSnakeCase } from '../utilities/string.utils';
-import { QueryResult, Record as Neo4jRecord } from 'neo4j-driver';
+import {
+  QueryResult,
+  Record as Neo4jRecord,
+  ManagedTransaction
+} from 'neo4j-driver';
 import { iRacingPropertiesDao } from './iracing-properties.dao';
+import { Neo4j } from 'neo4j-helper';
 
 @Injectable()
 export class TrackDao {
@@ -24,7 +29,7 @@ export class TrackDao {
 
   constructor(
     @Inject('Database')
-    private readonly database: Database,
+    private readonly database: Neo4j,
 
     @Inject('LoggerService')
     private readonly logger: LoggerService,
@@ -41,65 +46,67 @@ export class TrackDao {
       throw new Error(parsedInput.error.message);
     }
 
-    return await this.database.transaction(async (transaction) => {
-      const parsedTrack = createTrackSchema.parse(parsedInput.data);
+    return await this.database.transaction(
+      async (transaction: ManagedTransaction) => {
+        const parsedTrack = createTrackSchema.parse(parsedInput.data);
 
-      const trackRecord = await this.upsertTrack(
-        parsedInput.data.sku,
-        parsedTrack,
-        { transaction }
-      );
-
-      const configuration = trackConfigSchema.parse({
-        ...parsedInput.data,
-        id: parsedInput.data.track_id,
-        name: parsedInput.data.config_name,
-        length: parsedInput.data.track_config_length,
-        short_parade_lap: parsedInput.data.has_short_parade_lap
-      });
-
-      await this.upsertTrackConfig(track.track_id, configuration, {
-        transaction
-      });
-
-      const createConfigRelationship = await this.database.join(
-        'CONFIG_OF',
-        track.track_id,
-        track.sku,
-        'from',
-        { transaction }
-      );
-
-      if (!createConfigRelationship) {
-        throw new Error(
-          'Failed to create relationship between track and config'
+        const trackRecord = await this.upsertTrack(
+          parsedInput.data.sku,
+          parsedTrack,
+          { transaction }
         );
+
+        const configuration = trackConfigSchema.parse({
+          ...parsedInput.data,
+          id: parsedInput.data.track_id,
+          name: parsedInput.data.config_name,
+          length: parsedInput.data.track_config_length,
+          short_parade_lap: parsedInput.data.has_short_parade_lap
+        });
+
+        await this.upsertTrackConfig(track.track_id, configuration, {
+          transaction
+        });
+
+        const createConfigRelationship = await this.database.join(
+          'CONFIG_OF',
+          track.track_id,
+          track.sku,
+          'from',
+          { transaction }
+        );
+
+        if (!createConfigRelationship) {
+          throw new Error(
+            'Failed to create relationship between track and config'
+          );
+        }
+
+        // Filter down properties to only those that are present and
+        // truthy.  This should only build relationships that actually
+        // exist. Ex a track has ai_enabled: false, we don't want to
+        // create a relationship for that.
+        const properties = CommonProperties.filter(
+          (property) =>
+            property in parsedInput.data && Boolean(parsedInput.data[property])
+        );
+
+        await this.iRacingPropertiesDao.bulkUpsertAndAttach(
+          properties.map((property) => ({
+            name: prettyPrintSnakeCase(property),
+            type: property
+          })),
+          { label: this.nodeLabel, id: trackRecord.id },
+          transaction
+        );
+
+        this.logger.log('debug', 'Created Track', {
+          track: trackRecord.track_name
+        });
+
+        return trackRecord;
       }
-
-      // Filter down properties to only those that are present and
-      // truthy.  This should only build relationships that actually
-      // exist. Ex a track has ai_enabled: false, we don't want to
-      // create a relationship for that.
-      const properties = CommonProperties.filter(
-        (property) =>
-          property in parsedInput.data && Boolean(parsedInput.data[property])
-      );
-
-      await this.iRacingPropertiesDao.bulkUpsertAndAttach(
-        properties.map((property) => ({
-          name: prettyPrintSnakeCase(property),
-          type: property
-        })),
-        { label: this.nodeLabel, id: trackRecord.id },
-        transaction
-      );
-
-      this.logger.log('debug', 'Created Track', {
-        track: trackRecord.track_name
-      });
-
-      return trackRecord;
-    });
+    );
   }
 
   async upsertTrack(id: number, data: CreateTrack, options?: any) {
