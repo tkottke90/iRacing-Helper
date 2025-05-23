@@ -1,13 +1,8 @@
-import { Container, Inject, Injectable } from '@decorators/di';
-import { LoggerService } from './logger.service';
+import { loggerService } from './logger.service';
 import { MCPResource, McpSchema } from '../interfaces/model-context-protocol';
 
-@Injectable()
-export class MCPService {
-  constructor(
-    @Inject('LoggerService')
-    private readonly logger: LoggerService
-  ) {}
+class MCPService {
+  private readonly logger = loggerService;
 
   /**
    * Creates a Model Context Protocol resource
@@ -38,4 +33,5 @@ export class MCPService {
   }
 }
 
-Container.provide([{ provide: 'MCPService', useClass: MCPService }]);
+// Export singleton instance
+export const mcpService = new MCPService();

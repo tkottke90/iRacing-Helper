@@ -1,4 +1,3 @@
-import { Container, Inject, Injectable } from '@decorators/di';
 import {
   CommonProperties,
   CreateCarDTO,
@@ -8,25 +7,18 @@ import {
   CarPropertyDTO
 } from '../dto/car.dto';
 import { QueryInterface, QueryOptions } from '../interfaces/database';
-import { LoggerService } from '../services';
+import { loggerService } from '../services/logger.service';
 import { iRacingCar, iRacingCarSchema } from '../interfaces/car.iracing';
 import { prettyPrintSnakeCase } from '../utilities/string.utils';
 import { QueryResult, Record as Neo4jRecord } from 'neo4j-driver';
 import { iRacingPropertiesDao } from './iracing-properties.dao';
 import { Neo4j, Neo4jQueryBuilder } from 'neo4j-helper';
+import { database } from '../integrations/neo4j';
 
-@Injectable()
-export class CarDao {
-  constructor(
-    @Inject('Database')
-    private readonly database: Neo4j,
-
-    @Inject('LoggerService')
-    private readonly logger: LoggerService,
-
-    @Inject('iRacingPropertiesDao')
-    private readonly iRacingPropertiesDao: iRacingPropertiesDao
-  ) {}
+class CarDao {
+  private readonly database = database;
+  private readonly logger = loggerService;
+  private readonly iRacingPropertiesDao = iRacingPropertiesDao;
 
   async createFromIRacing(car: iRacingCar) {
     // Validate the iRacing Car Data
@@ -178,4 +170,5 @@ export class CarDao {
   }
 }
 
-Container.provide([{ provide: 'CarDao', useClass: CarDao }]);
+// Export singleton instance
+export const carDao = new CarDao();

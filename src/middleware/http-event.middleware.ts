@@ -1,11 +1,10 @@
 import express from 'express';
-import { LoggerService } from '../services';
-import { EnvironmentService } from '../services/environment.service';
+import { loggerService } from '../services';
 
 const NS_PER_SEC = 1e9;
 const NS_TO_MS = 1e6;
 
-const logger = new LoggerService(new EnvironmentService());
+const logger = loggerService;
 
 export function HttpEventMiddleware(
   req: express.Request,

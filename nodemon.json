@@ -1,7 +1,7 @@
 {
   "watch": ["src"],
   "ext": "ts",
-  "exec": "NODE_ENV=development ts-node -r tsconfig-paths/register index.ts",
+  "exec": "NODE_ENV=development node --env-file=.env --import tsx/esm index.ts",
   "delay": 500,
   "signal": "SIGTERM"
 }

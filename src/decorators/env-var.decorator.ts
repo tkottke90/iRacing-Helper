@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { EnvironmentService } from '../services/environment.service';
+import { environmentService } from '../services/environment.service';
 
 /**
  * Decorator that injects an environment variable value into a class property or constructor parameter.
@@ -46,7 +46,7 @@ export function EnvVar(
     parameterIndexOrDescriptor?: number | PropertyDescriptor
   ) => {
     // Get the environment service
-    const envService = new EnvironmentService();
+    const envService = environmentService;
 
     // If parameterIndexOrDescriptor is a number, it's being used as a parameter decorator
     if (typeof parameterIndexOrDescriptor === 'number') {

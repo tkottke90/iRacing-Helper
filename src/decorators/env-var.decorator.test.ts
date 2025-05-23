@@ -1,5 +1,5 @@
 import { EnvVar } from './env-var.decorator';
-import { EnvironmentService } from '../services/environment.service';
+import { environmentService } from '../services/environment.service';
 
 // Mock the environment service
 jest.mock('../services/environment.service', () => {

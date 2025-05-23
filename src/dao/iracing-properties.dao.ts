@@ -1,11 +1,11 @@
-import { Container, Inject, Injectable } from '@decorators/di';
 import {
   ManagedTransaction,
   Record as Neo4jRecord,
   QueryResult
 } from 'neo4j-driver';
 import { Neo4j } from 'neo4j-helper';
-import { LoggerService } from '../services';
+import { loggerService } from '../services/logger.service';
+import { database } from '../integrations/neo4j';
 import { prettyPrintSnakeCase } from '../utilities/string.utils';
 
 interface iRacingProperty {
@@ -17,18 +17,11 @@ interface iRacingProperty {
  * Data Access Object for iRacing Properties
  * Handles database operations related to iRacing properties
  */
-@Injectable()
-export class iRacingPropertiesDao {
+class IRacingPropertiesDao {
   readonly label = 'Property';
   readonly relationship = 'HAS_PROPERTY';
-
-  constructor(
-    @Inject('Database')
-    private readonly database: Neo4j,
-
-    @Inject('LoggerService')
-    private readonly logger: LoggerService
-  ) {}
+  private readonly database = database;
+  private readonly logger = loggerService;
 
   /**
    * Upsert an iRacing property
@@ -97,6 +90,5 @@ export class iRacingPropertiesDao {
   }
 }
 
-Container.provide([
-  { provide: 'iRacingPropertiesDao', useClass: iRacingPropertiesDao }
-]);
+// Export singleton instance
+export const iRacingPropertiesDao = new IRacingPropertiesDao();

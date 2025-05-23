@@ -1,25 +1,18 @@
 import express from 'express';
-import { Controller, Get, Response } from '@decorators/express';
-import { Inject } from '@decorators/di';
-import { LoggerService } from '../services';
-import { MCPService } from '../services/mcp.service';
-import { CarDao } from '../dao/car.dao';
+import { loggerService, mcpService } from '../services';
+import { carDao } from '../dao/car.dao';
 import { CarDTO } from '../dto/car.dto';
 
-@Controller('/cars')
 export class CarController {
-  constructor(
-    @Inject('LoggerService') private readonly logger: LoggerService,
-    @Inject('MCPService') private readonly mcpService: MCPService,
-    @Inject('CarDao') private readonly carDao: CarDao
-  ) {}
+  private readonly logger = loggerService;
+  private readonly mcpService = mcpService;
+  private readonly carDao = carDao;
 
   /**
    * MCP endpoint for cars
    * Returns car data in Model Context Protocol format
    */
-  @Get('/mcp')
-  async getCarsMCP(@Response() res: express.Response) {
+  async getCarsMCP(res: express.Response) {
     try {
       this.logger.log('debug', 'Car MCP endpoint called');
 

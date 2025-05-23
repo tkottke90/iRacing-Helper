@@ -1,4 +1,3 @@
-import { Container, Inject, Injectable } from '@decorators/di';
 import {
   CommonProperties,
   CreateTrack,
@@ -13,7 +12,7 @@ import {
   iRacingTrack,
   iRacingTrackConfigSchema
 } from '../interfaces/track.iracing';
-import { LoggerService } from '../services';
+import { loggerService } from '../services/logger.service';
 import { prettyPrintSnakeCase } from '../utilities/string.utils';
 import {
   QueryResult,
@@ -22,21 +21,13 @@ import {
 } from 'neo4j-driver';
 import { iRacingPropertiesDao } from './iracing-properties.dao';
 import { Neo4j } from 'neo4j-helper';
+import { database } from '../integrations/neo4j';
 
-@Injectable()
-export class TrackDao {
+class TrackDao {
   private readonly nodeLabel = 'Track';
-
-  constructor(
-    @Inject('Database')
-    private readonly database: Neo4j,
-
-    @Inject('LoggerService')
-    private readonly logger: LoggerService,
-
-    @Inject('iRacingPropertiesDao')
-    private readonly iRacingPropertiesDao: iRacingPropertiesDao
-  ) {}
+  private readonly database = database;
+  private readonly logger = loggerService;
+  private readonly iRacingPropertiesDao = iRacingPropertiesDao;
 
   async createFromIRacing(track: iRacingTrack) {
     // Validate the iRacing Track Data
@@ -196,4 +187,5 @@ export class TrackDao {
   // }
 }
 
-Container.provide([{ provide: 'TrackDao', useClass: TrackDao }]);
+// Export singleton instance
+export const trackDao = new TrackDao();

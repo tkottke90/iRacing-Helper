@@ -1,5 +1,4 @@
-import { Container, Inject, Injectable } from '@decorators/di';
-import { EnvironmentService } from './environment.service';
+import { environmentService } from './environment.service';
 
 const levels = ['fatal', 'error', 'warn', 'info', 'debug', 'trace'] as const;
 
@@ -10,12 +9,8 @@ interface ILoggerService<Levels extends string> {
   error: (error: Error) => void;
 }
 
-@Injectable()
-export class LoggerService implements ILoggerService<tempLevels> {
-  constructor(
-    @Inject('EnvironmentService')
-    private readonly envService: EnvironmentService
-  ) {}
+class LoggerService implements ILoggerService<tempLevels> {
+  private readonly envService = environmentService;
 
   log(level: tempLevels, message: string, metadata?: Record<string, any>) {
     const logLevel = (
@@ -45,4 +40,5 @@ export class LoggerService implements ILoggerService<tempLevels> {
   }
 }
 
-Container.provide([{ provide: 'LoggerService', useClass: LoggerService }]);
+// Export singleton instance
+export const loggerService = new LoggerService();

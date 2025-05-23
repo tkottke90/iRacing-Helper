@@ -1,6 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Container } from '@decorators/di';
-
 import { Neo4j } from 'neo4j-helper/neo4j';
 import { type Logger } from 'neo4j-helper';
 
@@ -19,6 +16,5 @@ const logger: Logger = {
   }
 };
 
-Container.provide([
-  { provide: 'Database', useFactory: () => new Neo4j(logger) }
-]);
+// Export singleton instance
+export const database = new Neo4j(logger);

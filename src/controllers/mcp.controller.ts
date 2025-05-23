@@ -1,22 +1,15 @@
 import express from 'express';
-import { Controller, Get, Params, Response } from '@decorators/express';
-import { Inject } from '@decorators/di';
-import { LoggerService } from '../services';
-import { MCPService } from '../services/mcp.service';
-import { TrackDao } from '../dao/track.dao';
-import { CarDao } from '../dao/car.dao';
+import { loggerService, mcpService } from '../services';
+import { trackDao } from '../dao/track.dao';
+import { carDao } from '../dao/car.dao';
 
-@Controller('/mcp')
 export class MCPController {
-  constructor(
-    @Inject('LoggerService') private readonly logger: LoggerService,
-    @Inject('MCPService') private readonly mcpService: MCPService,
-    @Inject('TrackDao') private readonly trackDao: TrackDao,
-    @Inject('CarDao') private readonly carDao: CarDao
-  ) {}
+  private readonly logger = loggerService;
+  private readonly mcpService = mcpService;
+  private readonly trackDao = trackDao;
+  private readonly carDao = carDao;
 
-  @Get('/')
-  async getRoot(@Response() res: express.Response) {
+  async getRoot(res: express.Response) {
     this.logger.log('debug', 'MCP root endpoint called');
 
     // Return links to available resources
@@ -31,8 +24,7 @@ export class MCPController {
     });
   }
 
-  @Get('/cars')
-  async getCars(@Response() res: express.Response) {
+  async getCars(res: express.Response) {
     try {
       this.logger.log('debug', 'MCP cars endpoint called');
 
@@ -77,11 +69,7 @@ export class MCPController {
     }
   }
 
-  @Get('/cars/:id')
-  async getCarByIdEndpoint(
-    @Params('id') id: string,
-    @Response() res: express.Response
-  ) {
+  async getCarByIdEndpoint(id: string, res: express.Response) {
     try {
       this.logger.log('debug', `MCP car by ID endpoint called for ID: ${id}`);
 
@@ -135,8 +123,7 @@ export class MCPController {
     }
   }
 
-  @Get('/tracks')
-  async getTracks(@Response() res: express.Response) {
+  async getTracks(res: express.Response) {
     try {
       this.logger.log('debug', 'MCP tracks endpoint called');
 
@@ -182,11 +169,7 @@ export class MCPController {
     }
   }
 
-  @Get('/tracks/:id')
-  async getTrackByIdEndpoint(
-    @Params('id') id: string,
-    @Response() res: express.Response
-  ) {
+  async getTrackByIdEndpoint(id: string, res: express.Response) {
     try {
       this.logger.log('debug', `MCP track by ID endpoint called for ID: ${id}`);
 

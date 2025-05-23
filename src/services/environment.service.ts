@@ -1,7 +1,4 @@
-import { Container, Injectable } from '@decorators/di';
-
-@Injectable()
-export class EnvironmentService {
+class EnvironmentService {
   private cache: Map<string, string> = new Map();
 
   get(key: string): string {
@@ -15,6 +12,5 @@ export class EnvironmentService {
   }
 }
 
-Container.provide([
-  { provide: 'EnvironmentService', useClass: EnvironmentService }
-]);
+// Export singleton instance
+export const environmentService = new EnvironmentService();

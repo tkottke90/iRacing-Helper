@@ -1,12 +1,9 @@
-import { Injectable } from '@decorators/di';
-
 type ResponseParser<T> = (response: Response) => Promise<T>;
 
 export function parseJsonResponse<T>(response: Response): Promise<T> {
   return response.json();
 }
 
-@Injectable()
 export class ExternalAPIService {
   protected tokenCache = '';
   protected tokenExpiry = 0;

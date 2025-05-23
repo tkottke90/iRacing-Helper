@@ -1,2 +1,2 @@
 export { HttpEventMiddleware } from './http-event.middleware';
-export * from './route-error.middleware';
+export { errorMiddleware } from './route-error.middleware';

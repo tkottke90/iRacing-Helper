@@ -1,31 +1,25 @@
-import { Container, Inject, Injectable } from '@decorators/di';
 import { ExternalAPIService } from '../interfaces/external-api';
 import { iRacingSignedResourceResponse } from '../interfaces/iracing.interface';
-import { EnvironmentService } from './environment.service';
-import { LoggerService } from './logger.service';
+import { environmentService } from './environment.service';
+import { loggerService } from './logger.service';
 import { UnauthorizedError } from '../utilities/errors.util';
 import { iRacingTrack } from '../interfaces/track.iracing';
-import { Neo4j } from 'neo4j-helper';
 import { iRacingCar } from '../interfaces/car.iracing';
 
 const AUTH_TOKEN_COOKIE_KEY = 'authtoken_members=';
 
-@Injectable()
-export class iRacingService extends ExternalAPIService {
+class IRacingService extends ExternalAPIService {
   private readonly username: string;
   private readonly password: string;
+  private readonly logger = loggerService;
 
-  constructor(
-    @Inject('EnvironmentService')
-    envService: EnvironmentService,
+  constructor() {
+    const baseUrl = environmentService.get('IRACING_API_URL');
 
-    @Inject('LoggerService')
-    private readonly logger: LoggerService
-  ) {
-    super(envService.get('IRACING_API_URL'));
+    super(baseUrl);
 
-    this.username = envService.get('IRACING_USERNAME');
-    this.password = envService.get('IRACING_PASSWORD');
+    this.username = environmentService.get('IRACING_USERNAME');
+    this.password = environmentService.get('IRACING_PASSWORD');
   }
 
   protected async authenticate(requestInit: RequestInit): Promise<RequestInit> {
@@ -109,4 +103,5 @@ export class iRacingService extends ExternalAPIService {
   }
 }
 
-Container.provide([{ provide: 'iRacingService', useClass: iRacingService }]);
+// Export singleton instance
+export const iRacingService = new IRacingService();
