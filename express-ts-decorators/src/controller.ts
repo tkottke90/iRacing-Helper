@@ -1,7 +1,7 @@
 import express from 'express';
 
 interface RouteConfiguration {
-  handlers: any[];
+  handlers: express.RequestHandler[];
   method: keyof Pick<
     express.Router,
     'get' | 'patch' | 'post' | 'put' | 'delete' | 'options'
@@ -11,10 +11,11 @@ interface RouteConfiguration {
 export class Controller {
   readonly routes: Map<string, RouteConfiguration> = new Map();
   readonly router: express.Router;
-  readonly path: string;
 
-  constructor(path: string) {
-    this.path = path;
+  constructor(
+    readonly path: string,
+    readonly middleware: express.RequestHandler[] = []
+  ) {
     this.router = express.Router({ mergeParams: true });
   }
 
@@ -22,6 +23,7 @@ export class Controller {
     this.routes.forEach((routeConfig, path) => {
       this.router[routeConfig.method](
         this.path + path,
+        ...this.middleware,
         ...routeConfig.handlers
       );
     });
