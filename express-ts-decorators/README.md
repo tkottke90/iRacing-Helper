@@ -2,6 +2,18 @@
 
 A lightweight TypeScript decorator library for Express.js that enables clean, declarative routing using modern decorator syntax. Build organized, maintainable REST APIs with minimal boilerplate code.
 
+- Table of Contents
+- [Features](#features)
+- [Dependencies](#dependencies)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Available Decorators](#available-decorators)
+- [Advanced Usage](#advanced-usage)
+- [API Versioning](#api-versioning)
+- [API Reference](#api-reference)
+- [TypeScript Tips](#typescript-tips)
+- [License](#license)
+
 ## Features
 
 - 🎯 **Declarative Routing** - Use decorators to define HTTP endpoints
@@ -10,6 +22,7 @@ A lightweight TypeScript decorator library for Express.js that enables clean, de
 - 📦 **Lightweight** - Minimal dependencies and overhead
 - 🎨 **Clean Architecture** - Organize your routes in controller classes
 - 🌐 **Full HTTP Support** - All major HTTP methods supported
+- 🔄 **API Versioning** - Built-in support for versioned APIs
 
 ## Dependencies
 
@@ -26,8 +39,6 @@ Your `tsconfig.json` must include:
 ```json
 {
   "compilerOptions": {
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "target": "ES2020",
     "module": "ESNext"
   }
@@ -173,23 +184,98 @@ controllers.forEach(controller => {
 });
 ```
 
-### Error Handling
+## API Versioning
+
+Express TypeScript Decorators provides built-in support for API versioning, making it easy to maintain multiple versions of your API simultaneously.
+
+### Basic Versioning Setup
 
 ```typescript
-export class UserController extends Controller {
-  @Get('/:id')
-  async getUserById(req: express.Request, res: express.Response) {
-    try {
-      const user = await this.userService.findById(req.params.id);
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-      res.json(user);
-    } catch (error) {
-      res.status(500).json({ error: 'Internal server error' });
-    }
+import express from 'express';
+import { createVersionMap, attachVersionMap } from 'express-ts-decorators';
+import { UserControllerV1, ProductControllerV1 } from './controllers/v1';
+import { UserControllerV2, ProductControllerV2, OrderControllerV2 } from './controllers/v2';
+
+const app = express();
+
+// Define controllers for each version
+const v1Controllers = [new UserControllerV1(), new ProductControllerV1()];
+const v2Controllers = [new UserControllerV2(), new ProductControllerV2(), new OrderControllerV2()];
+
+// Create version map
+const versionMap = createVersionMap(v1Controllers, v2Controllers);
+
+// Attach all versioned routes to the app
+attachVersionMap(app, versionMap);
+
+// This creates:
+// GET /v0/users     -> UserControllerV1
+// GET /v0/products  -> ProductControllerV1
+// GET /v1/users     -> UserControllerV2
+// GET /v1/products  -> ProductControllerV2
+// GET /v1/orders    -> OrderControllerV2
+```
+
+### Version-Specific Controllers
+
+Create separate controller classes for each API version:
+
+```typescript
+// controllers/v1/UserController.ts
+export class UserControllerV1 extends Controller {
+  constructor() {
+    super('/users');
+  }
+
+  @Get('/')
+  async getUsers(_req: express.Request, res: express.Response) {
+    // V1 implementation - simple user list
+    const users = await this.userService.findAll();
+    res.json(users);
   }
 }
+
+// controllers/v2/UserController.ts
+export class UserControllerV2 extends Controller {
+  constructor() {
+    super('/users');
+  }
+
+  @Get('/')
+  async getUsers(req: express.Request, res: express.Response) {
+    // V2 implementation - with pagination and filtering
+    const { page = 1, limit = 10, filter } = req.query;
+    const users = await this.userService.findWithPagination(page, limit, filter);
+    res.json({
+      data: users,
+      pagination: { page, limit, total: users.length }
+    });
+  }
+
+  @Get('/:id/profile')
+  async getUserProfile(req: express.Request, res: express.Response) {
+    // New endpoint only available in V2
+    const profile = await this.userService.getProfile(req.params.id);
+    res.json(profile);
+  }
+}
+```
+
+### Manual Version Mapping
+
+For more control over version paths, create version maps manually:
+
+```typescript
+import { VersionMap } from 'express-ts-decorators';
+
+const customVersionMap: VersionMap = {
+  '/v1': [new UserControllerV1(), new ProductControllerV1()],
+  '/v2': [new UserControllerV2(), new ProductControllerV2()],
+  '/beta': [new UserControllerBeta()],
+  '/legacy': [new UserControllerLegacy()]
+};
+
+attachVersionMap(app, customVersionMap);
 ```
 
 ## API Reference
@@ -211,6 +297,32 @@ function attachController(app: express.Application, controller: Controller): voi
 ```
 
 Attaches a controller instance to an Express application, registering all decorated routes.
+
+### Versioning Functions
+
+#### createVersionMap Function
+
+```typescript
+function createVersionMap(...versions: Array<Controller[]>): VersionMap
+```
+
+Creates a version map from arrays of controllers. Each array index corresponds to a version path (0 → /v0, 1 → /v1, etc.).
+
+#### attachVersionMap Function
+
+```typescript
+function attachVersionMap(app: express.Application, versionMap: VersionMap): void
+```
+
+Attaches a version map to an Express application, automatically creating routers for each version.
+
+#### VersionMap Type
+
+```typescript
+type VersionMap = Record<string, Controller[]>
+```
+
+Type definition for version maps, where keys are version paths and values are arrays of controllers.
 
 ## TypeScript Tips
 
