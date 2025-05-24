@@ -1,0 +1,22 @@
+{
+  "name": "express-ts-decorators",
+  "description": "Library to enhance the express framework with TS v5+ decorators",
+  "version": "1.0.0",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "npm run pre-build && tsc -p ./tsconfig.json",
+    "pre-build": "rm -rf dist",
+    "watch": "tsc -w -p ./tsconfig.json"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "express": "^5.0.0",
+    "typescript": "^5.0.0"
+  }
+}
