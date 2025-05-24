@@ -2,14 +2,20 @@ import express from 'express';
 import { loggerService, mcpService } from '../services';
 import { trackDao } from '../dao/track.dao';
 import { carDao } from '../dao/car.dao';
+import { Controller, Get } from 'express-ts-decorators';
 
-export class MCPController {
+export class MCPController extends Controller {
   private readonly logger = loggerService;
   private readonly mcpService = mcpService;
   private readonly trackDao = trackDao;
   private readonly carDao = carDao;
 
-  async getRoot(res: express.Response) {
+  constructor(path = '/mcp') {
+    super(path);
+  }
+
+  @Get('/')
+  async getRoot(_req: express.Request, res: express.Response) {
     this.logger.log('debug', 'MCP root endpoint called');
 
     // Return links to available resources
@@ -24,7 +30,8 @@ export class MCPController {
     });
   }
 
-  async getCars(res: express.Response) {
+  @Get('/cars')
+  async getCars(_req: express.Request, res: express.Response) {
     try {
       this.logger.log('debug', 'MCP cars endpoint called');
 
@@ -69,8 +76,10 @@ export class MCPController {
     }
   }
 
-  async getCarByIdEndpoint(id: string, res: express.Response) {
+  @Get('/cars/:id')
+  async getCarByIdEndpoint(req: express.Request, res: express.Response) {
     try {
+      const id = req.params.id;
       this.logger.log('debug', `MCP car by ID endpoint called for ID: ${id}`);
 
       const carId = parseInt(id, 10);
@@ -123,7 +132,8 @@ export class MCPController {
     }
   }
 
-  async getTracks(res: express.Response) {
+  @Get('/tracks')
+  async getTracks(_req: express.Request, res: express.Response) {
     try {
       this.logger.log('debug', 'MCP tracks endpoint called');
 
@@ -169,8 +179,10 @@ export class MCPController {
     }
   }
 
-  async getTrackByIdEndpoint(id: string, res: express.Response) {
+  @Get('/tracks/:id')
+  async getTrackByIdEndpoint(req: express.Request, res: express.Response) {
     try {
+      const id = req.params.id;
       this.logger.log('debug', `MCP track by ID endpoint called for ID: ${id}`);
 
       const trackId = parseInt(id, 10);

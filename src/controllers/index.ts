@@ -2,33 +2,30 @@
 // individual controller files in this directory, import them here
 // and then add them to the router setup
 
-import { Application } from 'express';
+import { Application, Router } from 'express';
 import { ServerStatusController } from './server-status';
 import { iRacingController } from './iracing';
 import { MCPController } from './mcp.controller';
 import { CarController } from './car.controller';
+import { attachController, Controller } from 'express-ts-decorators';
+
+const Routers: Record<string, Array<Controller>> = {
+  '/v1': [
+    new iRacingController(),
+    new ServerStatusController(),
+    new MCPController(),
+    new CarController()
+  ]
+};
 
 export default function (app: Application) {
-  // Instantiate controllers
-  const serverStatusController = new ServerStatusController();
-  const iracingController = new iRacingController('/iracing');
-  const mcpController = new MCPController();
-  const carController = new CarController();
+  for (const path in Routers) {
+    const router = Router({ mergeParams: true });
 
-  // Server Status routes
-  app.get('/', (req, res) => serverStatusController.getRoot(res));
-  app.get('/healthcheck', (req, res) =>
-    serverStatusController.getHealthcheck(res)
-  );
+    for (const Controller of Routers[path]) {
+      attachController(router, Controller);
+    }
 
-  // iRacing routes
-  iracingController.attach(app);
-
-  // MCP routes
-  app.get('/mcp', (req, res) => mcpController.getRoot(res));
-  app.get('/mcp/cars', (req, res) => mcpController.getCars(res));
-  app.get('/mcp/tracks', (req, res) => mcpController.getTracks(res));
-
-  // Car routes
-  app.get('/cars/mcp', (req, res) => carController.getCarsMCP(res));
+    app.use(path, router);
+  }
 }

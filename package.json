@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "express": "^5.0.0",
+    "express-ts-decorators": "file:express-ts-decorators",
     "neo4j-driver": "^5.28.1",
     "neo4j-helper": "^1.0.3",
     "reflect-metadata": "^0.2.2",

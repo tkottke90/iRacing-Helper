@@ -2,7 +2,7 @@ import express from 'express';
 import { iRacingService, loggerService } from '../services';
 import { trackDao } from '../dao/track.dao';
 import { carDao } from '../dao/car.dao';
-import { Controller, Get } from '../decorators/http/get.decorator';
+import { Controller, Get } from 'express-ts-decorators';
 
 export class iRacingController extends Controller {
   private readonly logger = loggerService;
@@ -10,8 +10,12 @@ export class iRacingController extends Controller {
   private readonly trackDao = trackDao;
   private readonly carDao = carDao;
 
-  @Get('/car-classes')
-  async getRoot(req: express.Request, res: express.Response) {
+  constructor(path = '/iracing') {
+    super(path);
+  }
+
+  @Get('/')
+  async getRoot(_req: express.Request, res: express.Response) {
     res.json({
       description: 'Calls the iRacing API and returns data',
       links: {
@@ -22,7 +26,8 @@ export class iRacingController extends Controller {
     });
   }
 
-  async getCars(res: express.Response) {
+  @Get('/cars')
+  async getCars(_req: express.Request, res: express.Response) {
     try {
       const cars = await this.iRacingService.getAllCars();
       res.json(cars);
@@ -32,7 +37,8 @@ export class iRacingController extends Controller {
     }
   }
 
-  async getCarClasses(res: express.Response) {
+  @Get('/car-classes')
+  async getCarClasses(_req: express.Request, res: express.Response) {
     try {
       const carClasses = await this.iRacingService.getAllCarClasses();
       res.json(carClasses);
@@ -42,7 +48,8 @@ export class iRacingController extends Controller {
     }
   }
 
-  async getTracks(res: express.Response) {
+  @Get('/tracks')
+  async getTracks(_req: express.Request, res: express.Response) {
     try {
       const tracks = await this.iRacingService.getAllTracks();
       res.json(tracks);
@@ -52,7 +59,8 @@ export class iRacingController extends Controller {
     }
   }
 
-  async syncCars(res: express.Response) {
+  @Get('/sync/cars')
+  async syncCars(_req: express.Request, res: express.Response) {
     try {
       const cars = await this.iRacingService.getAllCars();
 
@@ -86,7 +94,8 @@ export class iRacingController extends Controller {
     }
   }
 
-  async syncTracks(res: express.Response) {
+  @Get('/sync/tracks')
+  async syncTracks(_req: express.Request, res: express.Response) {
     try {
       const tracks = await this.iRacingService.getAllTracks();
 
